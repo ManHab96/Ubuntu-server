@@ -270,3 +270,89 @@ async def send_message(
 ):
     await send_whatsapp_message(agency_id, to_phone, message)
     return {"status": "sent"}
+
+# Test chat endpoint (without WhatsApp)
+@router.post("/test-chat")
+async def test_chat(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Test endpoint to chat with AI without WhatsApp
+    """
+    message = request.get("message")
+    phone = request.get("phone", "+521234567890")
+    agency_id = request.get("agency_id")
+    
+    if not message or not agency_id:
+        raise HTTPException(status_code=400, detail="Message and agency_id are required")
+    
+    # Get or create test customer
+    customer = await customers_collection.find_one({"phone": phone, "agency_id": agency_id})
+    if not customer:
+        customer_id = str(uuid.uuid4())
+        customer = {
+            "id": customer_id,
+            "agency_id": agency_id,
+            "name": "Usuario de Prueba",
+            "phone": phone,
+            "source": "organic",
+            "created_at": datetime.utcnow()
+        }
+        await customers_collection.insert_one(customer)
+    else:
+        customer_id = customer["id"]
+    
+    # Get or create test conversation
+    conversation = await conversations_collection.find_one({
+        "agency_id": agency_id,
+        "customer_id": customer_id
+    })
+    
+    if not conversation:
+        conversation_id = str(uuid.uuid4())
+        conversation = {
+            "id": conversation_id,
+            "agency_id": agency_id,
+            "customer_id": customer_id,
+            "whatsapp_phone": phone,
+            "last_message": message,
+            "last_message_at": datetime.utcnow(),
+            "created_at": datetime.utcnow()
+        }
+        await conversations_collection.insert_one(conversation)
+    else:
+        conversation_id = conversation["id"]
+        await conversations_collection.update_one(
+            {"id": conversation_id},
+            {"$set": {"last_message": message, "last_message_at": datetime.utcnow()}}
+        )
+    
+    # Save user message
+    user_msg = {
+        "id": str(uuid.uuid4()),
+        "conversation_id": conversation_id,
+        "from_customer": True,
+        "message_text": message,
+        "timestamp": datetime.utcnow()
+    }
+    await messages_collection.insert_one(user_msg)
+    
+    # Generate AI response
+    response_text = await generate_ai_response(agency_id, conversation_id, message)
+    
+    # Save AI response
+    ai_msg = {
+        "id": str(uuid.uuid4()),
+        "conversation_id": conversation_id,
+        "from_customer": False,
+        "message_text": response_text,
+        "timestamp": datetime.utcnow()
+    }
+    await messages_collection.insert_one(ai_msg)
+    
+    return {
+        "status": "success",
+        "response": response_text,
+        "conversation_id": conversation_id
+    }
