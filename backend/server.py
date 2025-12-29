@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -24,7 +25,15 @@ app = FastAPI(title="Automotive Agency API")
 # Mount uploads directory for serving files
 uploads_dir = Path("/app/backend/uploads")
 uploads_dir.mkdir(exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
+# Route to serve uploaded files
+@app.get("/api/files/serve/{filename}")
+async def serve_file(filename: str):
+    file_path = uploads_dir / filename
+    if not file_path.exists():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path)
 
 # Include routers
 app.include_router(auth.router)
