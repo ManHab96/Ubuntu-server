@@ -7,6 +7,7 @@ from database import (
 from auth import get_current_user
 import httpx
 import uuid
+import asyncio
 from datetime import datetime
 from openai import AsyncOpenAI
 import os
