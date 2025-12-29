@@ -88,6 +88,7 @@ class MediaFile(BaseModel):
     file_url: str
     file_type: str  # image or pdf
     file_size: int
+    original_size: Optional[int] = None
     category: str  # car, agency, promotion
     related_id: Optional[str] = None  # car_id or promotion_id
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
