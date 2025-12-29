@@ -260,7 +260,7 @@ class BackendTester:
                 
                 # 1. Test GET cars (list existing)
                 print("   Testing GET /cars...")
-                response = await client.get(f"{self.base_url}/cars?agency_id={self.agency_id}", headers=headers)
+                response = await client.get(f"{self.base_url}/cars/?agency_id={self.agency_id}", headers=headers)
                 
                 if response.status_code == 200:
                     cars = response.json()
