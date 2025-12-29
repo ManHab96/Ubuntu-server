@@ -73,11 +73,14 @@ Aplicación web para agencia automotriz con asistente virtual de IA conectado a 
     file: "/app/backend/routes/appointments.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Pendiente verificar flujo completo"
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: All CRUD operations working correctly. Created customer, appointment, updated status, retrieved data, and cancelled appointment successfully. Minor issue: customer deletion returns 405 (method not allowed) but this doesn't affect core functionality."
 
 ## frontend:
   - task: "Login Page"
