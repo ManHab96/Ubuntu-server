@@ -17,6 +17,8 @@ import Conversations from './pages/Conversations';
 import Config from './pages/Config';
 import AIPrompt from './pages/AIPrompt';
 import WhatsAppGuide from './pages/WhatsAppGuide';
+import Profile from './pages/Profile';
+import ResetPassword from './pages/ResetPassword';
 
 import './App.css';
 
