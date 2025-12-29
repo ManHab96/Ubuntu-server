@@ -99,7 +99,7 @@ class BackendTester:
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 headers = {"Authorization": f"Bearer {self.auth_token}"}
-                response = await client.get(f"{self.base_url}/agencies", headers=headers)
+                response = await client.get(f"{self.base_url}/agencies/", headers=headers)
                 
                 print(f"   Agencies API response: {response.status_code}")
                 if response.status_code == 200:
