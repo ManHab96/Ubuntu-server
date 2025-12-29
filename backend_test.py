@@ -101,16 +101,47 @@ class BackendTester:
                 headers = {"Authorization": f"Bearer {self.auth_token}"}
                 response = await client.get(f"{self.base_url}/agencies", headers=headers)
                 
+                print(f"   Agencies API response: {response.status_code}")
                 if response.status_code == 200:
                     agencies = response.json()
+                    print(f"   Found {len(agencies)} agencies")
                     if agencies:
                         self.agency_id = agencies[0]["id"]
                         print(f"📍 Using agency: {agencies[0].get('name', 'Unknown')} (ID: {self.agency_id})")
                     else:
-                        print("⚠️ No agencies found")
+                        print("⚠️ No agencies found - creating test agency")
+                        await self.create_test_agency()
+                else:
+                    print(f"   Error response: {response.text}")
                         
         except Exception as e:
             print(f"⚠️ Could not get agency ID: {e}")
+    
+    async def create_test_agency(self):
+        """Create a test agency for testing"""
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                headers = {"Authorization": f"Bearer {self.auth_token}"}
+                
+                agency_data = {
+                    "name": "Agencia de Prueba",
+                    "address": "Calle Principal 123, Ciudad de México",
+                    "phone": "+52 55 1234 5678",
+                    "email": "contacto@agenciaprueba.com",
+                    "business_hours": "Lunes a Sábado 9:00 - 18:00"
+                }
+                
+                response = await client.post(f"{self.base_url}/agencies/", json=agency_data, headers=headers)
+                
+                if response.status_code == 200:
+                    agency = response.json()
+                    self.agency_id = agency["id"]
+                    print(f"✅ Created test agency: {agency['name']} (ID: {self.agency_id})")
+                else:
+                    print(f"❌ Failed to create test agency: {response.status_code} - {response.text}")
+                    
+        except Exception as e:
+            print(f"❌ Error creating test agency: {e}")
     
     async def test_ai_chat_responses(self):
         """Test AI chat with different messages to verify varied responses"""
