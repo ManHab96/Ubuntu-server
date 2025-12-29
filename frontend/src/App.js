@@ -137,6 +137,14 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute>
+                    <Profile />
+                  </PrivateRoute>
+                }
+              />
             </Routes>
             <Toaster position="top-right" />
           </BrowserRouter>
