@@ -26,6 +26,7 @@ const Sidebar = () => {
     { icon: Calendar, label: 'Citas', path: '/appointments', testId: 'sidebar-appointments' },
     { icon: Users, label: 'Clientes', path: '/customers', testId: 'sidebar-customers' },
     { icon: MessageSquare, label: 'Conversaciones', path: '/conversations', testId: 'sidebar-conversations' },
+    { icon: Sparkles, label: 'Chat Prueba IA', path: '/ai-test-chat', testId: 'sidebar-ai-test-chat' },
     { icon: Settings, label: 'Configuración', path: '/config', testId: 'sidebar-config' },
     { icon: Sparkles, label: 'Prompt IA', path: '/ai-prompt', testId: 'sidebar-ai-prompt' },
   ];
