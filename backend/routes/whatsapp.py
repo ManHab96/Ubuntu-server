@@ -202,7 +202,8 @@ Autos disponibles:
             api_key = os.environ.get('EMERGENT_LLM_KEY')
         
         if not api_key:
-            return "Gracias por tu mensaje. Un asesor se comunicará contigo pronto."
+            # If no API key, use smart fallback response
+            return await generate_fallback_response(user_message, cars, promotions, agency)
         
         # Use OpenAI-compatible API with EMERGENT_LLM_KEY
         client = AsyncOpenAI(
@@ -223,11 +224,16 @@ Autos disponibles:
         # Add current user message
         openai_messages.append({"role": "user", "content": user_message})
         
-        # Call OpenAI-compatible API
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=openai_messages,
-            max_tokens=500,
+        # Call OpenAI-compatible API with timeout
+        response = await asyncio.wait_for(
+            client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=openai_messages,
+                max_tokens=500,
+                temperature=0.7
+            ),
+            timeout=15.0
+        )
             temperature=0.7
         )
         
