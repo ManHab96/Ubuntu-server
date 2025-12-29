@@ -203,7 +203,7 @@ Autos disponibles:
             return "Gracias por tu mensaje. Un asesor se comunicará contigo pronto."
         
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-3-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         
         # Build conversation history for Gemini
         history_text = "\n".join([
