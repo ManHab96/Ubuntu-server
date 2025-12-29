@@ -19,6 +19,7 @@ import AIPrompt from './pages/AIPrompt';
 import WhatsAppGuide from './pages/WhatsAppGuide';
 import Profile from './pages/Profile';
 import ResetPassword from './pages/ResetPassword';
+import AITestChat from './pages/AITestChat';
 
 import './App.css';
 
