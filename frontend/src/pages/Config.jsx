@@ -336,18 +336,9 @@ const Config = () => {
                       data-testid="gemini-key-input"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Opción 2: Usa tu propia API Key de Google AI Studio. Déjalo en blanco para usar Emergent Key.
+                      Obtén tu API Key en: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Google AI Studio</a>
                     </p>
                   </div>
-                  
-                  {aiData.gemini_api_key && (
-                    <Alert>
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <AlertDescription>
-                        ✅ API Key configurada: {aiData.gemini_api_key === 'EMERGENT_LLM_KEY' ? 'Emergent LLM Key' : 'API Key personalizada'}
-                      </AlertDescription>
-                    </Alert>
-                  )}
                   
                   <div className="flex gap-2 justify-end">
                     <Button type="submit" disabled={loading} data-testid="save-ai-btn">
