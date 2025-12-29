@@ -308,14 +308,19 @@ Autos disponibles:
             ),
             timeout=15.0
         )
-            temperature=0.7
-        )
         
         return response.choices[0].message.content
     
     except Exception as e:
         print(f"Error generating AI response: {e}")
-        return "Gracias por tu mensaje. Un asesor se comunicará contigo pronto."
+        # Use fallback when AI fails
+        try:
+            cars = await cars_collection.find({"agency_id": agency_id, "is_available": True}, {"_id": 0}).to_list(100)
+            agency = await agencies_collection.find_one({"id": agency_id}, {"_id": 0})
+            promotions = await promotions_collection.find({"agency_id": agency_id, "is_active": True}, {"_id": 0}).to_list(100)
+            return await generate_fallback_response(user_message, cars, promotions, agency)
+        except:
+            return "Gracias por tu mensaje. Un asesor se comunicará contigo pronto."
 
 async def send_whatsapp_message(agency_id: str, to_phone: str, message: str):
     try:
