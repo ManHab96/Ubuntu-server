@@ -268,50 +268,56 @@ Autos disponibles:
             for promo in promotions:
                 context += f"\n- {promo['title']}: {promo['description']}"
         
-        context += "\n\nInstrucciones: Responde de forma profesional, clara y orientando al cliente a agendar una cita."
+        context += "\n\nInstrucciones: Responde de forma profesional, clara y orientando al cliente a agendar una cita. Responde en español."
         
-        # Get API key (use EMERGENT_LLM_KEY)
-        api_key = config.get("gemini_api_key") or os.environ.get('EMERGENT_LLM_KEY')
+        # Get API key from config
+        # Priority: 1) User's own Google API key, 2) EMERGENT_LLM_KEY
+        user_api_key = config.get("gemini_api_key", "")
+        use_emergent_key = not user_api_key or user_api_key == "EMERGENT_LLM_KEY"
         
-        # Si el usuario configuró EMERGENT_LLM_KEY como string, usar la key del entorno
-        if api_key == "EMERGENT_LLM_KEY":
+        if use_emergent_key:
             api_key = os.environ.get('EMERGENT_LLM_KEY')
+        else:
+            api_key = user_api_key
         
         if not api_key:
             # If no API key, use smart fallback response
             return await generate_fallback_response(user_message, cars, promotions, agency)
         
-        # Use OpenAI-compatible API with EMERGENT_LLM_KEY
-        client = AsyncOpenAI(
+        # Build conversation history text
+        history_text = ""
+        for msg in conv_messages[-5:]:
+            role = "Cliente" if msg.get('from_customer') else "Asistente"
+            history_text += f"{role}: {msg.get('message_text', '')}\n"
+        
+        # Full prompt with context and history
+        full_prompt = f"{history_text}Cliente: {user_message}"
+        
+        # Initialize LlmChat with emergentintegrations
+        chat = LlmChat(
             api_key=api_key,
-            base_url="https://api.emergent.sh/v1"
+            session_id=f"agency_{agency_id}_{conversation_id}",
+            system_message=context
         )
         
-        # Build message history for OpenAI format
-        openai_messages = [{"role": "system", "content": context}]
+        # Configure model based on key type
+        if use_emergent_key:
+            # Use Gemini with Emergent key
+            chat.with_model("gemini", "gemini-2.5-flash")
+        else:
+            # User's own Google API key - use Gemini directly
+            chat.with_model("gemini", "gemini-2.5-flash")
         
-        for msg in conv_messages[-5:]:  # Last 5 messages
-            role = "user" if msg.get('from_customer') else "assistant"
-            openai_messages.append({
-                "role": role,
-                "content": msg.get('message_text', '')
-            })
+        # Create user message
+        user_msg = UserMessage(text=full_prompt)
         
-        # Add current user message
-        openai_messages.append({"role": "user", "content": user_message})
-        
-        # Call OpenAI-compatible API with timeout
+        # Send message and get response with timeout
         response = await asyncio.wait_for(
-            client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=openai_messages,
-                max_tokens=500,
-                temperature=0.7
-            ),
-            timeout=15.0
+            chat.send_message(user_msg),
+            timeout=30.0
         )
         
-        return response.choices[0].message.content
+        return response
     
     except Exception as e:
         print(f"Error generating AI response: {e}")
