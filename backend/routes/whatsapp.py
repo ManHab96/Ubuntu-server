@@ -144,11 +144,11 @@ async def generate_ai_response(agency_id: str, conversation_id: str, user_messag
         system_prompt = config.get("ai_system_prompt", "Eres un asistente de ventas automotriz.")
         
         # Get conversation history
-        messages = await messages_collection.find(
+        conv_messages = await messages_collection.find(
             {"conversation_id": conversation_id},
             {"_id": 0}
         ).sort("timestamp", -1).limit(10).to_list(10)
-        messages.reverse()
+        conv_messages.reverse()
         
         # Get available cars
         cars = await cars_collection.find(
@@ -168,7 +168,7 @@ async def generate_ai_response(agency_id: str, conversation_id: str, user_messag
         # Get agency info
         agency = await agencies_collection.find_one({"id": agency_id}, {"_id": 0})
         
-        # Build context
+        # Build context for system message
         context = f"""{system_prompt}
 
 Información de la agencia:
@@ -181,7 +181,7 @@ Autos disponibles:
 """
         
         for car in cars[:10]:  # Limit to first 10 cars
-            context += f"\n- {car['brand']} {car['model']} {car['year']}"
+            context += f"\n- {car.get('brand', '')} {car.get('model', '')} {car.get('year', '')}"
             if car.get('price'):
                 context += f" - ${car['price']:,.2f}"
             if car.get('description'):
@@ -192,36 +192,46 @@ Autos disponibles:
             for promo in promotions:
                 context += f"\n- {promo['title']}: {promo['description']}"
         
-        # Configure Gemini
-        api_key = config.get("gemini_api_key") or os.environ.get('GEMINI_API_KEY')
+        context += "\n\nInstrucciones: Responde de forma profesional, clara y orientando al cliente a agendar una cita."
         
-        # Si el usuario configuró EMERGENT_LLM_KEY, usar la key del entorno
+        # Get API key (use EMERGENT_LLM_KEY)
+        api_key = config.get("gemini_api_key") or os.environ.get('EMERGENT_LLM_KEY')
+        
+        # Si el usuario configuró EMERGENT_LLM_KEY como string, usar la key del entorno
         if api_key == "EMERGENT_LLM_KEY":
             api_key = os.environ.get('EMERGENT_LLM_KEY')
         
         if not api_key:
             return "Gracias por tu mensaje. Un asesor se comunicará contigo pronto."
         
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        # Use OpenAI-compatible API with EMERGENT_LLM_KEY
+        client = AsyncOpenAI(
+            api_key=api_key,
+            base_url="https://emergentllm.onrender.com/v1"
+        )
         
-        # Build conversation history for Gemini
-        history_text = "\n".join([
-            f"{'Cliente' if msg['from_customer'] else 'Asistente'}: {msg['message_text']}"
-            for msg in messages[-5:]  # Last 5 messages
-        ])
+        # Build message history for OpenAI format
+        openai_messages = [{"role": "system", "content": context}]
         
-        prompt = f"""{context}
-
-Historial reciente:
-{history_text}
-
-Cliente: {user_message}
-
-Responde de forma profesional, clara y orientándolo a agendar una cita:"""
+        for msg in conv_messages[-5:]:  # Last 5 messages
+            role = "user" if msg.get('from_customer') else "assistant"
+            openai_messages.append({
+                "role": role,
+                "content": msg.get('message_text', '')
+            })
         
-        response = model.generate_content(prompt)
-        return response.text
+        # Add current user message
+        openai_messages.append({"role": "user", "content": user_message})
+        
+        # Call OpenAI-compatible API
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=openai_messages,
+            max_tokens=500,
+            temperature=0.7
+        )
+        
+        return response.choices[0].message.content
     
     except Exception as e:
         print(f"Error generating AI response: {e}")
