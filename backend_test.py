@@ -376,7 +376,7 @@ class BackendTester:
                 
                 # 1. Test GET appointments (list existing)
                 print("   Testing GET /appointments...")
-                response = await client.get(f"{self.base_url}/appointments?agency_id={self.agency_id}", headers=headers)
+                response = await client.get(f"{self.base_url}/appointments/?agency_id={self.agency_id}", headers=headers)
                 
                 if response.status_code == 200:
                     appointments = response.json()
