@@ -146,6 +146,14 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              <Route
+                path="/ai-test-chat"
+                element={
+                  <PrivateRoute>
+                    <AITestChat />
+                  </PrivateRoute>
+                }
+              />
             </Routes>
             <Toaster position="top-right" />
           </BrowserRouter>
