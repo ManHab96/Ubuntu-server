@@ -194,6 +194,11 @@ Autos disponibles:
         
         # Configure Gemini
         api_key = config.get("gemini_api_key") or os.environ.get('GEMINI_API_KEY')
+        
+        # Si el usuario configuró EMERGENT_LLM_KEY, usar la key del entorno
+        if api_key == "EMERGENT_LLM_KEY":
+            api_key = os.environ.get('EMERGENT_LLM_KEY')
+        
         if not api_key:
             return "Gracias por tu mensaje. Un asesor se comunicará contigo pronto."
         
