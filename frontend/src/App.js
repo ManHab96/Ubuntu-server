@@ -16,6 +16,7 @@ import Customers from './pages/Customers';
 import Conversations from './pages/Conversations';
 import Config from './pages/Config';
 import AIPrompt from './pages/AIPrompt';
+import WhatsAppGuide from './pages/WhatsAppGuide';
 
 import './App.css';
 
