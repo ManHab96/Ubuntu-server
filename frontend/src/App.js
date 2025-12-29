@@ -1,1 +1,137 @@
-import React from 'react';\nimport { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';\nimport { AuthProvider, useAuth } from './contexts/AuthContext';\nimport { AgencyProvider } from './contexts/AgencyContext';\nimport { ThemeProvider } from './contexts/ThemeContext';\nimport { Toaster } from './components/ui/sonner';\n\nimport Login from './pages/Login';\nimport Dashboard from './pages/Dashboard';\nimport Agencies from './pages/Agencies';\nimport Cars from './pages/Cars';\nimport Files from './pages/Files';\nimport Promotions from './pages/Promotions';\nimport Appointments from './pages/Appointments';\nimport Customers from './pages/Customers';\nimport Conversations from './pages/Conversations';\nimport Config from './pages/Config';\nimport AIPrompt from './pages/AIPrompt';\n\nimport './App.css';\n\nconst PrivateRoute = ({ children }) => {\n  const { token, loading } = useAuth();\n  \n  if (loading) {\n    return (\n      <div className=\"min-h-screen flex items-center justify-center\">\n        <div className=\"text-center\">\n          <div className=\"animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto\"></div>\n          <p className=\"mt-4 text-muted-foreground\">Cargando...</p>\n        </div>\n      </div>\n    );\n  }\n  \n  return token ? children : <Navigate to=\"/login\" />;\n};\n\nfunction App() {\n  return (\n    <AuthProvider>\n      <AgencyProvider>\n        <ThemeProvider>\n          <BrowserRouter>\n            <Routes>\n              <Route path=\"/login\" element={<Login />} />\n              <Route path=\"/\" element={<Navigate to=\"/dashboard\" />} />\n              <Route\n                path=\"/dashboard\"\n                element={\n                  <PrivateRoute>\n                    <Dashboard />\n                  </PrivateRoute>\n                }\n              />\n              <Route\n                path=\"/agencies\"\n                element={\n                  <PrivateRoute>\n                    <Agencies />\n                  </PrivateRoute>\n                }\n              />\n              <Route\n                path=\"/cars\"\n                element={\n                  <PrivateRoute>\n                    <Cars />\n                  </PrivateRoute>\n                }\n              />\n              <Route\n                path=\"/files\"\n                element={\n                  <PrivateRoute>\n                    <Files />\n                  </PrivateRoute>\n                }\n              />\n              <Route\n                path=\"/promotions\"\n                element={\n                  <PrivateRoute>\n                    <Promotions />\n                  </PrivateRoute>\n                }\n              />\n              <Route\n                path=\"/appointments\"\n                element={\n                  <PrivateRoute>\n                    <Appointments />\n                  </PrivateRoute>\n                }\n              />\n              <Route\n                path=\"/customers\"\n                element={\n                  <PrivateRoute>\n                    <Customers />\n                  </PrivateRoute>\n                }\n              />\n              <Route\n                path=\"/conversations\"\n                element={\n                  <PrivateRoute>\n                    <Conversations />\n                  </PrivateRoute>\n                }\n              />\n              <Route\n                path=\"/config\"\n                element={\n                  <PrivateRoute>\n                    <Config />\n                  </PrivateRoute>\n                }\n              />\n              <Route\n                path=\"/ai-prompt\"\n                element={\n                  <PrivateRoute>\n                    <AIPrompt />\n                  </PrivateRoute>\n                }\n              />\n            </Routes>\n            <Toaster position=\"top-right\" />\n          </BrowserRouter>\n        </ThemeProvider>\n      </AgencyProvider>\n    </AuthProvider>\n  );\n}\n\nexport default App;
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AgencyProvider } from './contexts/AgencyContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { Toaster } from './components/ui/sonner';
+
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Agencies from './pages/Agencies';
+import Cars from './pages/Cars';
+import Files from './pages/Files';
+import Promotions from './pages/Promotions';
+import Appointments from './pages/Appointments';
+import Customers from './pages/Customers';
+import Conversations from './pages/Conversations';
+import Config from './pages/Config';
+import AIPrompt from './pages/AIPrompt';
+
+import './App.css';
+
+const PrivateRoute = ({ children }) => {
+  const { token, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return token ? children : <Navigate to="/login" />;
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AgencyProvider>
+        <ThemeProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<Navigate to="/dashboard" />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/agencies"
+                element={
+                  <PrivateRoute>
+                    <Agencies />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/cars"
+                element={
+                  <PrivateRoute>
+                    <Cars />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/files"
+                element={
+                  <PrivateRoute>
+                    <Files />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/promotions"
+                element={
+                  <PrivateRoute>
+                    <Promotions />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/appointments"
+                element={
+                  <PrivateRoute>
+                    <Appointments />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/customers"
+                element={
+                  <PrivateRoute>
+                    <Customers />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/conversations"
+                element={
+                  <PrivateRoute>
+                    <Conversations />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/config"
+                element={
+                  <PrivateRoute>
+                    <Config />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/ai-prompt"
+                element={
+                  <PrivateRoute>
+                    <AIPrompt />
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+            <Toaster position="top-right" />
+          </BrowserRouter>
+        </ThemeProvider>
+      </AgencyProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;
