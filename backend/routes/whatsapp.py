@@ -8,7 +8,7 @@ from auth import get_current_user
 import httpx
 import uuid
 from datetime import datetime
-import google.generativeai as genai
+from openai import AsyncOpenAI
 import os
 
 router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
