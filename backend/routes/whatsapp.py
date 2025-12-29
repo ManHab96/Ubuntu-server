@@ -9,8 +9,10 @@ import httpx
 import uuid
 import asyncio
 from datetime import datetime
-from openai import AsyncOpenAI
 import os
+
+# Import emergentintegrations for LLM
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
 
