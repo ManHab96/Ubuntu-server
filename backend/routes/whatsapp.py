@@ -207,7 +207,7 @@ Autos disponibles:
         # Use OpenAI-compatible API with EMERGENT_LLM_KEY
         client = AsyncOpenAI(
             api_key=api_key,
-            base_url="https://emergentllm.onrender.com/v1"
+            base_url="https://api.emergent.sh/v1"
         )
         
         # Build message history for OpenAI format
