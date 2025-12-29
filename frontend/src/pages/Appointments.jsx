@@ -267,14 +267,14 @@ const Appointments = () => {
                 <div className="space-y-2">
                   <Label htmlFor="car_id">Auto (opcional)</Label>
                   <Select
-                    value={formData.car_id}
-                    onValueChange={(value) => setFormData({ ...formData, car_id: value })}
+                    value={formData.car_id || "none"}
+                    onValueChange={(value) => setFormData({ ...formData, car_id: value === "none" ? "" : value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar auto" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin auto</SelectItem>
+                      <SelectItem value="none">Sin auto</SelectItem>
                       {cars.map((car) => (
                         <SelectItem key={car.id} value={car.id}>
                           {car.brand} {car.model} {car.year}
