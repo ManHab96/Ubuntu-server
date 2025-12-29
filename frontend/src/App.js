@@ -126,6 +126,14 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              <Route
+                path="/whatsapp-guide"
+                element={
+                  <PrivateRoute>
+                    <WhatsAppGuide />
+                  </PrivateRoute>
+                }
+              />
             </Routes>
             <Toaster position="top-right" />
           </BrowserRouter>
