@@ -134,6 +134,79 @@ async def process_incoming_message(agency_id: str, from_phone: str, message_text
     # Send response via WhatsApp
     await send_whatsapp_message(agency_id, from_phone, response_text)
 
+
+async def generate_fallback_response(user_message: str, cars: list, promotions: list, agency: dict) -> str:
+    """Generate smart fallback responses based on keywords when AI is unavailable"""
+    message_lower = user_message.lower()
+    agency_name = agency.get('name', 'nuestra agencia') if agency else 'nuestra agencia'
+    
+    # Greetings
+    if any(word in message_lower for word in ['hola', 'buenos', 'buenas', 'hi', 'hey']):
+        return f"¡Hola! Bienvenido a {agency_name}. Soy el asistente virtual y estoy aquí para ayudarte. ¿Te gustaría conocer nuestros autos disponibles, promociones actuales, o agendar una cita?"
+    
+    # Car inquiries
+    if any(word in message_lower for word in ['auto', 'autos', 'carro', 'carros', 'vehículo', 'vehiculo', 'disponible']):
+        if cars:
+            response = f"¡Tenemos excelentes opciones para ti! Actualmente contamos con {len(cars)} vehículos disponibles:\n\n"
+            for car in cars[:5]:
+                response += f"• {car.get('brand', '')} {car.get('model', '')} {car.get('year', '')}"
+                if car.get('price'):
+                    response += f" - ${car['price']:,.2f}"
+                response += "\n"
+            if len(cars) > 5:
+                response += f"\n...y {len(cars) - 5} opciones más."
+            response += "\n¿Te gustaría agendar una cita para ver alguno en persona?"
+            return response
+        return "Por el momento estamos actualizando nuestro inventario. ¿Te gustaría que un asesor se comunique contigo con la información más reciente?"
+    
+    # Promotions
+    if any(word in message_lower for word in ['promoción', 'promocion', 'oferta', 'descuento', 'promociones']):
+        if promotions:
+            response = "¡Tenemos promociones especiales para ti!\n\n"
+            for promo in promotions[:3]:
+                response += f"🎉 {promo.get('title', '')}\n{promo.get('description', '')}\n\n"
+            response += "¿Te interesa alguna? ¡Agenda una cita y aprovecha estos beneficios!"
+            return response
+        return "Actualmente no tenemos promociones activas, pero puedo ayudarte a encontrar el auto perfecto para ti. ¿Qué tipo de vehículo buscas?"
+    
+    # Appointment scheduling
+    if any(word in message_lower for word in ['cita', 'agendar', 'visitar', 'visita', 'ver', 'conocer']):
+        address = agency.get('address', '') if agency else ''
+        hours = agency.get('business_hours', 'Lunes a Sábado 9:00 - 18:00') if agency else ''
+        response = "¡Excelente! Me encantaría ayudarte a agendar una cita.\n\n"
+        if address:
+            response += f"📍 Estamos ubicados en: {address}\n"
+        if hours:
+            response += f"🕐 Horario: {hours}\n"
+        response += "\n¿Qué día y hora te funcionaría mejor para visitarnos?"
+        return response
+    
+    # Pricing
+    if any(word in message_lower for word in ['precio', 'costo', 'cuanto', 'cuánto', 'vale', 'financiamiento']):
+        return "Manejamos precios muy competitivos y contamos con opciones de financiamiento. Para darte información precisa, ¿podrías indicarme qué modelo te interesa? También puedo agendarte una cita con un asesor especializado."
+    
+    # Contact/Hours
+    if any(word in message_lower for word in ['horario', 'hora', 'abierto', 'cerrado', 'ubicación', 'ubicacion', 'donde', 'dónde', 'dirección', 'direccion']):
+        address = agency.get('address', 'Consulta con un asesor') if agency else ''
+        phone = agency.get('phone', '') if agency else ''
+        hours = agency.get('business_hours', 'Lunes a Sábado 9:00 - 18:00') if agency else ''
+        response = f"¡Con gusto te comparto nuestra información!\n\n"
+        if address:
+            response += f"📍 Dirección: {address}\n"
+        if phone:
+            response += f"📞 Teléfono: {phone}\n"
+        if hours:
+            response += f"🕐 Horario: {hours}\n"
+        response += "\n¿Te gustaría agendar una visita?"
+        return response
+    
+    # Thanks
+    if any(word in message_lower for word in ['gracias', 'thank', 'ok', 'vale', 'perfecto']):
+        return "¡Con mucho gusto! Si tienes alguna otra pregunta o deseas agendar una cita, estoy aquí para ayudarte. 🚗"
+    
+    # Default response
+    return f"Gracias por contactar a {agency_name}. Puedo ayudarte con:\n\n• Información de autos disponibles\n• Promociones actuales\n• Agendar una cita\n• Horarios y ubicación\n\n¿En qué puedo asistirte?"
+
 async def generate_ai_response(agency_id: str, conversation_id: str, user_message: str) -> str:
     try:
         # Get system config
