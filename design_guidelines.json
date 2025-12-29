@@ -1,0 +1,174 @@
+{
+  "identity": {
+    "persona": "E1",
+    "tone": "High-Performance, Precision, Trust, Modern Luxury",
+    "keywords": ["Aerodynamic", "Control Room", "Seamless", "Executive"]
+  },
+  "typography": {
+    "headings": {
+      "family": "Manrope, sans-serif",
+      "weights": ["600", "700", "800"],
+      "usage": "Use for all page titles, card headers, and metric values. Tight tracking (-0.02em) for a technical feel."
+    },
+    "body": {
+      "family": "Inter, sans-serif",
+      "weights": ["400", "500"],
+      "usage": "Use for tables, inputs, and long-form text. Optimized for legibility at small sizes."
+    },
+    "mono": {
+      "family": "JetBrains Mono, monospace",
+      "usage": "Use for VIN numbers, IDs, and technical specs."
+    }
+  },
+  "colors": {
+    "strategy": "Configurable Corporate",
+    "palette": {
+      "primary": {
+        "default": "hsl(221.2 83.2% 53.3%)",
+        "variable": "--primary",
+        "description": "The main brand color. Used for primary buttons, active states, and key highlights. MUST be configurable via Admin Panel."
+      },
+      "secondary": {
+        "default": "hsl(210 40% 96.1%)",
+        "variable": "--secondary",
+        "description": "Used for subtle backgrounds and secondary actions."
+      },
+      "background": {
+        "light": "hsl(210 40% 98%)",
+        "dark": "hsl(222.2 84% 4.9%)",
+        "variable": "--background"
+      },
+      "surface": {
+        "light": "hsl(0 0% 100%)",
+        "dark": "hsl(222.2 84% 4.9%)",
+        "variable": "--card"
+      },
+      "accent": {
+        "default": "hsl(210 40% 96.1%)",
+        "variable": "--accent",
+        "description": "Used for hover states and subtle highlights."
+      },
+      "destructive": {
+        "default": "hsl(0 84.2% 60.2%)",
+        "variable": "--destructive",
+        "description": "Used for delete actions and critical errors."
+      }
+    },
+    "gradients": {
+      "dashboard_header": "linear-gradient(to right, hsl(var(--primary)/0.1), transparent)",
+      "glass_surface": "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)"
+    }
+  },
+  "layout": {
+    "grid_system": {
+      "dashboard": "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6",
+      "inventory": "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6",
+      "detail_view": "grid-cols-1 lg:grid-cols-3 gap-8"
+    },
+    "spacing": {
+      "container_padding": "p-6 md:p-8 lg:p-10",
+      "card_padding": "p-6",
+      "section_gap": "gap-8"
+    },
+    "structure": {
+      "sidebar": "Fixed width (280px), collapsible. Dark mode by default for contrast or matching brand theme.",
+      "topbar": "Sticky, glassmorphism effect. Contains Global Search, Notifications, and User Profile.",
+      "main_content": "Scrollable area with max-width constraints for readability on large screens."
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "h-10 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm hover:shadow-md font-medium",
+      "secondary": "h-10 px-6 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all font-medium",
+      "ghost": "hover:bg-accent hover:text-accent-foreground"
+    },
+    "cards": {
+      "base": "rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow duration-200",
+      "metric": "p-6 flex flex-col justify-between h-full relative overflow-hidden"
+    },
+    "inputs": {
+      "base": "h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    },
+    "tables": {
+      "base": "w-full caption-bottom text-sm",
+      "header": "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+      "row": "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "backdrop-blur-md bg-background/80 border-b",
+    "shadows": {
+      "soft": "shadow-[0_2px_10px_rgba(0,0,0,0.03)]",
+      "hover": "shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
+    },
+    "borders": "border border-border/60",
+    "radius": "rounded-lg"
+  },
+  "motion": {
+    "page_transition": {
+      "initial": { "opacity": 0, "y": 10 },
+      "animate": { "opacity": 1, "y": 0 },
+      "exit": { "opacity": 0, "y": -10 },
+      "transition": { "duration": 0.3, "ease": "easeOut" }
+    },
+    "list_stagger": {
+      "container": {
+        "hidden": { "opacity": 0 },
+        "show": {
+          "opacity": 1,
+          "transition": { "staggerChildren": 0.05 }
+        }
+      },
+      "item": {
+        "hidden": { "opacity": 0, "y": 20 },
+        "show": { "opacity": 1, "y": 0 }
+      }
+    }
+  },
+  "image_urls": {
+    "login_background": {
+      "url": "https://images.unsplash.com/photo-1761138078661-541ba2bf7b12?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Sleek black sports car in dark garage. Use with overlay for Login Page."
+    },
+    "inventory_placeholder": {
+      "url": "https://images.unsplash.com/photo-1762195340046-415140d8b1b2?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "White Porsche SUV in studio. Use as default for cars without images."
+    },
+    "sales_avatar": {
+      "url": "https://images.unsplash.com/photo-1740485863233-032dff964d0d?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Professional man in suit leaning on car. Use for 'Sales Rep' demo profile."
+    },
+    "dealership_exterior": {
+      "url": "https://images.pexels.com/photos/5864157/pexels-photo-5864157.jpeg",
+      "description": "Modern glass building. Use for 'Agency Management' card preview."
+    },
+    "sales_context": {
+      "url": "https://images.pexels.com/photos/8249282/pexels-photo-8249282.jpeg",
+      "description": "Car keys on desk. Use for 'Promotions' or 'New Deal' context."
+    }
+  },
+  "instructions_to_main_agent": {
+    "branding_implementation": "CRITICAL: Do not hardcode colors. Use the CSS variables defined in tailwind.config.js. Create a 'ThemeContext' or 'BrandingProvider' that fetches the agency configuration and updates the root CSS variables (document.documentElement.style.setProperty('--primary', newColor)).",
+    "layout_strategy": "Use a 'DashboardLayout' component for pages 2-11. Use a 'AuthLayout' for page 1. The DashboardLayout must have a collapsible sidebar and a sticky topbar.",
+    "charts": "Use 'recharts' with the Shadcn Chart component wrapper. Ensure charts use the CSS variable colors for consistency.",
+    "tables": "Use '@tanstack/react-table' for the Inventory and CRM tables to handle sorting and filtering efficiently.",
+    "forms": "Use 'react-hook-form' + 'zod' for all forms (Login, Agency CRUD, Car CRUD). Wrap them in Shadcn Form components.",
+    "ai_integration": "For the AI Prompt Editor, use a large textarea with syntax highlighting if possible, or a clean monospaced font area. Provide a 'Test Prompt' button next to it.",
+    "whatsapp_ui": "For the Conversations page, replicate the 3-pane layout of WhatsApp Web: List of chats (left), Active chat (center), Contact Info (right - collapsible).",
+    "testing": "Add 'data-testid' to all interactive elements (buttons, inputs, rows). Format: 'page-section-element-action' (e.g., 'login-form-email-input')."
+  },
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: 'transition: all'. This results in breaking transforms.",
+    "You MUST NOT center align the app container.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations.",
+    "NEVER use AI assistant Emoji characters for icons.",
+    "Every interaction needs micro-animations - hover states, transitions.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Use 'sonner' for toasts."
+  ]
+}
