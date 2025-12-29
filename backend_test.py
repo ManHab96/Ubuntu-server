@@ -368,6 +368,7 @@ class BackendTester:
             return
         
         created_appointment_id = None
+        created_customer_id = None
         all_passed = True
         
         try:
@@ -385,16 +386,34 @@ class BackendTester:
                     print(f"   ❌ GET appointments failed: {response.status_code}")
                     all_passed = False
                 
-                # 2. Test POST appointment (create new)
+                # 2. Create a customer first (required for appointment)
+                print("   Creating test customer...")
+                customer_data = {
+                    "agency_id": self.agency_id,
+                    "name": "Juan Pérez",
+                    "phone": "+521234567890",
+                    "email": "juan.perez@test.com",
+                    "source": "organic"
+                }
+                
+                response = await client.post(f"{self.base_url}/customers/", json=customer_data, headers=headers)
+                
+                if response.status_code == 200:
+                    customer = response.json()
+                    created_customer_id = customer["id"]
+                    print(f"   ✅ Customer created (ID: {created_customer_id})")
+                else:
+                    print(f"   ❌ Customer creation failed: {response.status_code} - {response.text}")
+                    all_passed = False
+                    return
+                
+                # 3. Test POST appointment (create new)
                 print("   Testing POST /appointments (create)...")
                 future_date = datetime.utcnow() + timedelta(days=7)
                 new_appointment = {
                     "agency_id": self.agency_id,
-                    "customer_name": "Juan Pérez",
-                    "customer_phone": "+521234567890",
-                    "customer_email": "juan.perez@test.com",
+                    "customer_id": created_customer_id,
                     "appointment_date": future_date.isoformat(),
-                    "service_type": "Consulta de venta",
                     "notes": "Interesado en Toyota Camry"
                 }
                 
@@ -408,19 +427,19 @@ class BackendTester:
                     print(f"   ❌ POST appointment failed: {response.status_code} - {response.text}")
                     all_passed = False
                 
-                # 3. Test GET single appointment
+                # 4. Test GET single appointment
                 if created_appointment_id:
                     print("   Testing GET /appointments/{id}...")
                     response = await client.get(f"{self.base_url}/appointments/{created_appointment_id}", headers=headers)
                     
                     if response.status_code == 200:
                         appointment = response.json()
-                        print(f"   ✅ Retrieved appointment for {appointment['customer_name']}")
+                        print(f"   ✅ Retrieved appointment (ID: {appointment['id']})")
                     else:
                         print(f"   ❌ GET single appointment failed: {response.status_code}")
                         all_passed = False
                 
-                # 4. Test PATCH appointment status
+                # 5. Test PATCH appointment status
                 if created_appointment_id:
                     print("   Testing PATCH /appointments/{id}/status...")
                     response = await client.patch(
@@ -434,7 +453,7 @@ class BackendTester:
                         print(f"   ❌ PATCH appointment status failed: {response.status_code}")
                         all_passed = False
                 
-                # 5. Test today's appointments
+                # 6. Test today's appointments
                 print("   Testing GET /appointments/today...")
                 response = await client.get(f"{self.base_url}/appointments/today?agency_id={self.agency_id}", headers=headers)
                 
@@ -445,7 +464,7 @@ class BackendTester:
                     print(f"   ❌ GET today appointments failed: {response.status_code}")
                     all_passed = False
                 
-                # 6. Test DELETE appointment (cleanup)
+                # 7. Test DELETE appointment (cleanup)
                 if created_appointment_id:
                     print("   Testing DELETE /appointments (cancel)...")
                     response = await client.delete(f"{self.base_url}/appointments/{created_appointment_id}", headers=headers)
@@ -455,6 +474,15 @@ class BackendTester:
                     else:
                         print(f"   ❌ DELETE appointment failed: {response.status_code}")
                         all_passed = False
+                
+                # 8. Cleanup customer
+                if created_customer_id:
+                    print("   Cleaning up test customer...")
+                    response = await client.delete(f"{self.base_url}/customers/{created_customer_id}", headers=headers)
+                    if response.status_code == 200:
+                        print("   ✅ Test customer deleted")
+                    else:
+                        print(f"   ⚠️ Customer cleanup failed: {response.status_code}")
             
             if all_passed:
                 self.test_results["appointments_crud"] = {
