@@ -282,42 +282,56 @@ const Config = () => {
           <TabsContent value="ai" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Configuración de IA (Google Gemini 3 Flash)</CardTitle>
+                <CardTitle>Configuración de IA (Google Gemini 2.5 Flash)</CardTitle>
                 <CardDescription>
-                  Configura la API de Gemini para el asistente virtual
+                  Configura la API de Gemini para el asistente virtual inteligente
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAISubmit} className="space-y-4">
+                  {/* Current status */}
+                  {aiData.gemini_api_key && (
+                    <Alert className={aiData.gemini_api_key === 'EMERGENT_LLM_KEY' ? 'bg-green-50 dark:bg-green-950 border-green-200' : 'bg-blue-50 dark:bg-blue-950 border-blue-200'}>
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertDescription>
+                        {aiData.gemini_api_key === 'EMERGENT_LLM_KEY' 
+                          ? '✅ Usando Emergent Universal Key (Gemini 2.5 Flash)'
+                          : '✅ Usando tu API Key de Google'}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Option 1: Emergent Key */}
                   <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900">
                     <HelpCircle className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="space-y-2">
-                      <p className="font-medium">Opción 1: Usar Emergent LLM Key (Recomendado)</p>
+                      <p className="font-medium">Opción 1: Usar Emergent Universal Key (Recomendado)</p>
                       <p className="text-xs">
-                        Clave universal que funciona con Gemini 3 Flash. Ya está disponible y lista para usar.
+                        Clave universal que funciona con Gemini 2.5 Flash. Ya está configurada y lista para usar. Los créditos se descuentan de tu balance en Emergent.
                       </p>
                       <Button
                         type="button"
                         size="sm"
-                        variant="outline"
+                        variant={aiData.gemini_api_key === 'EMERGENT_LLM_KEY' ? 'default' : 'outline'}
                         onClick={handleUseEmergentKey}
                         disabled={loading}
                       >
-                        Usar Emergent LLM Key
+                        {aiData.gemini_api_key === 'EMERGENT_LLM_KEY' ? '✓ Emergent Key Activa' : 'Usar Emergent Universal Key'}
                       </Button>
                     </AlertDescription>
                   </Alert>
                   
+                  {/* Option 2: Own Google API Key */}
                   <div className="space-y-2">
                     <Label htmlFor="gemini_api_key">
-                      Gemini API Key
+                      Opción 2: Tu propia API Key de Google
                       <Badge variant="outline" className="ml-2">Opcional</Badge>
                     </Label>
                     <Input
                       id="gemini_api_key"
                       type="password"
                       placeholder="AIzaSy..."
-                      value={aiData.gemini_api_key}
+                      value={aiData.gemini_api_key === 'EMERGENT_LLM_KEY' ? '' : aiData.gemini_api_key}
                       onChange={(e) => setAiData({ ...aiData, gemini_api_key: e.target.value })}
                       data-testid="gemini-key-input"
                     />
