@@ -19,8 +19,8 @@ router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
 # Default verify token (can be overridden by agency config)
 DEFAULT_VERIFY_TOKEN = "Ventas123"
 
-# WhatsApp webhook verification (GET)
-@router.get("/webhook")
+# WhatsApp webhook verification (GET and HEAD)
+@router.api_route("/webhook", methods=["GET", "HEAD"])
 async def verify_webhook(
     request: Request,
     hub_mode: str = Query(None, alias="hub.mode"),
@@ -31,10 +31,14 @@ async def verify_webhook(
     Meta sends a GET request to verify the webhook.
     We must return the hub.challenge value as plain text.
     """
-    from fastapi.responses import PlainTextResponse
+    from fastapi.responses import PlainTextResponse, Response
     
     # Log the verification attempt
-    print(f"Webhook verification attempt: mode={hub_mode}, token={hub_verify_token}, challenge={hub_challenge}")
+    print(f"Webhook verification: method={request.method}, mode={hub_mode}, token={hub_verify_token}, challenge={hub_challenge}")
+    
+    # Handle HEAD request
+    if request.method == "HEAD":
+        return Response(status_code=200)
     
     # Check if this is a verification request
     if hub_mode == "subscribe" and hub_challenge:
@@ -45,6 +49,10 @@ async def verify_webhook(
         else:
             print(f"Invalid verify token: {hub_verify_token}, expected: {DEFAULT_VERIFY_TOKEN}")
             return PlainTextResponse(content="Invalid verify token", status_code=403)
+    
+    # If no parameters, return OK (for health checks)
+    if not hub_mode and not hub_challenge and not hub_verify_token:
+        return PlainTextResponse(content="Webhook is active", status_code=200)
     
     # If not a valid verification request
     return PlainTextResponse(content="Invalid request", status_code=400)
