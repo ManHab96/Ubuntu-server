@@ -38,3 +38,13 @@ async def get_messages_by_conversation(conversation_id: str = None, current_user
         return []
     messages = await messages_collection.find({"conversation_id": conversation_id}, {"_id": 0}).sort("timestamp", 1).to_list(1000)
     return [Message(**msg) for msg in messages]
+
+# Separate messages router
+messages_router = APIRouter(prefix="/api/messages", tags=["messages"])
+
+@messages_router.get("/")
+async def get_messages(conversation_id: str = None, current_user: dict = Depends(get_current_user)):
+    if not conversation_id:
+        return []
+    messages = await messages_collection.find({"conversation_id": conversation_id}, {"_id": 0}).sort("timestamp", 1).to_list(1000)
+    return messages
