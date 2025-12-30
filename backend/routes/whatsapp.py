@@ -62,9 +62,11 @@ async def verify_webhook(
 async def receive_whatsapp_message(request: Request):
     try:
         data = await request.json()
+        print(f"📩 Webhook POST received: {data}")
         
         # Extract message data from WhatsApp Cloud API format
         if "entry" not in data:
+            print("No 'entry' in webhook data")
             return {"status": "ok"}
         
         for entry in data["entry"]:
@@ -72,22 +74,33 @@ async def receive_whatsapp_message(request: Request):
                 value = change.get("value", {})
                 messages = value.get("messages", [])
                 
+                print(f"📨 Processing {len(messages)} messages")
+                
                 for message in messages:
                     # Extract message details
                     from_phone = message.get("from")
                     message_text = message.get("text", {}).get("body", "")
                     message_id = message.get("id")
                     
+                    print(f"📱 Message from {from_phone}: {message_text}")
+                    
                     if not from_phone or not message_text:
+                        print("Missing from_phone or message_text, skipping")
                         continue
                     
                     # Find agency by phone number (you'll need to match this)
                     # For now, use first active agency
-                    agency = await agencies_collection.find_one({"is_active": True})
+                    agency = await agencies_collection.find_one({"is_active": True}, {"_id": 0})
                     if not agency:
+                        # Try to get any agency
+                        agency = await agencies_collection.find_one({}, {"_id": 0})
+                    
+                    if not agency:
+                        print("No agency found!")
                         continue
                     
                     agency_id = agency["id"]
+                    print(f"🏢 Using agency: {agency.get('name')} ({agency_id})")
                     
                     # Process message
                     await process_incoming_message(agency_id, from_phone, message_text, message_id)
@@ -95,7 +108,9 @@ async def receive_whatsapp_message(request: Request):
         return {"status": "ok"}
     
     except Exception as e:
-        print(f"Error processing webhook: {e}")
+        print(f"❌ Error processing webhook: {e}")
+        import traceback
+        traceback.print_exc()
         return {"status": "error", "message": str(e)}
 
 async def process_incoming_message(agency_id: str, from_phone: str, message_text: str, message_id: str):
