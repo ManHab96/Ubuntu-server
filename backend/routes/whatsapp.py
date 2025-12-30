@@ -19,13 +19,29 @@ router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
 # WhatsApp webhook verification (GET)
 @router.get("/webhook")
 async def verify_webhook(
-    hub_mode: str = Query(alias="hub.mode"),
-    hub_challenge: str = Query(alias="hub.challenge"),
-    hub_verify_token: str = Query(alias="hub.verify_token")
+    request: Request,
+    hub_mode: str = Query(None, alias="hub.mode"),
+    hub_challenge: str = Query(None, alias="hub.challenge"),
+    hub_verify_token: str = Query(None, alias="hub.verify_token")
 ):
-    # This should match the verify token configured in system config
-    # For now, we'll accept any token and verify later per agency
-    return int(hub_challenge)
+    """
+    Meta sends a GET request to verify the webhook.
+    We must return the hub.challenge value as plain text.
+    """
+    from fastapi.responses import PlainTextResponse
+    
+    # Log the verification attempt
+    print(f"Webhook verification attempt: mode={hub_mode}, token={hub_verify_token}, challenge={hub_challenge}")
+    
+    # Check if this is a verification request
+    if hub_mode == "subscribe" and hub_challenge:
+        # For now, accept any verify token (you can add validation later)
+        # In production, validate hub_verify_token against your stored token
+        print(f"Webhook verified successfully!")
+        return PlainTextResponse(content=hub_challenge, status_code=200)
+    
+    # If not a valid verification request
+    return PlainTextResponse(content="Invalid verification request", status_code=400)
 
 # WhatsApp webhook receiver (POST)
 @router.post("/webhook")
