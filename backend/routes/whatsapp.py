@@ -8,7 +8,9 @@ from auth import get_current_user
 import httpx
 import uuid
 import asyncio
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
+from dateutil import parser as date_parser
 import os
 
 # Import emergentintegrations for LLM
@@ -18,6 +20,134 @@ router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
 
 # Default verify token (can be overridden by agency config)
 DEFAULT_VERIFY_TOKEN = "Ventas123"
+
+# Appointment detection patterns
+APPOINTMENT_PATTERNS = [
+    r'(?:el\s+)?(?:día\s+)?(\d{1,2})\s*(?:de\s+)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)',
+    r'(?:el\s+)?(?:próximo\s+)?(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)',
+    r'(?:a\s+las?\s+)?(\d{1,2})(?::(\d{2}))?\s*(?:hrs?|horas?|am|pm)?',
+    r'mañana|pasado\s+mañana|hoy',
+]
+
+DAYS_MAP = {
+    'lunes': 0, 'martes': 1, 'miércoles': 2, 'miercoles': 2, 
+    'jueves': 3, 'viernes': 4, 'sábado': 5, 'sabado': 5, 'domingo': 6
+}
+
+MONTHS_MAP = {
+    'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6,
+    'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
+}
+
+async def detect_and_create_appointment(agency_id: str, customer_id: str, user_message: str, conversation_id: str) -> dict:
+    """
+    Detect appointment intent and extract date/time from user message.
+    Returns appointment info if created, None otherwise.
+    """
+    message_lower = user_message.lower()
+    
+    # Check if message contains appointment-related keywords
+    appointment_keywords = ['cita', 'agendar', 'reservar', 'apartar', 'ir', 'visitar', 'voy', 'iré', 'ire', 'paso', 'llego']
+    time_keywords = ['hora', 'mañana', 'tarde', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+    
+    has_appointment_intent = any(kw in message_lower for kw in appointment_keywords)
+    has_time_reference = any(kw in message_lower for kw in time_keywords) or re.search(r'\d{1,2}(?::\d{2})?\s*(?:am|pm|hrs?)?', message_lower)
+    
+    if not (has_appointment_intent and has_time_reference):
+        return None
+    
+    # Try to extract date and time
+    appointment_date = None
+    appointment_time = None
+    now = datetime.utcnow()
+    
+    # Check for relative dates
+    if 'mañana' in message_lower and 'pasado' not in message_lower:
+        appointment_date = now + timedelta(days=1)
+    elif 'pasado mañana' in message_lower:
+        appointment_date = now + timedelta(days=2)
+    elif 'hoy' in message_lower:
+        appointment_date = now
+    
+    # Check for day names
+    for day_name, day_num in DAYS_MAP.items():
+        if day_name in message_lower:
+            days_ahead = day_num - now.weekday()
+            if days_ahead <= 0:
+                days_ahead += 7
+            appointment_date = now + timedelta(days=days_ahead)
+            break
+    
+    # Check for specific date (e.g., "15 de enero")
+    date_match = re.search(r'(\d{1,2})\s*(?:de\s+)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)', message_lower)
+    if date_match:
+        day = int(date_match.group(1))
+        month = MONTHS_MAP.get(date_match.group(2), now.month)
+        year = now.year if month >= now.month else now.year + 1
+        try:
+            appointment_date = datetime(year, month, day)
+        except ValueError:
+            pass
+    
+    # Extract time
+    time_match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm|hrs?|horas?)?', message_lower)
+    if time_match:
+        hour = int(time_match.group(1))
+        minute = int(time_match.group(2)) if time_match.group(2) else 0
+        period = time_match.group(3) or ''
+        
+        if 'pm' in period.lower() and hour < 12:
+            hour += 12
+        elif 'am' in period.lower() and hour == 12:
+            hour = 0
+        
+        # Assume PM for business hours if no period specified
+        if hour < 9 and not period:
+            hour += 12
+        
+        appointment_time = f"{hour:02d}:{minute:02d}"
+    
+    # Default time if not specified
+    if appointment_date and not appointment_time:
+        appointment_time = "10:00"  # Default to 10 AM
+    
+    # If we have both date and time, create the appointment
+    if appointment_date:
+        try:
+            # Combine date and time
+            if appointment_time:
+                hour, minute = map(int, appointment_time.split(':'))
+                appointment_datetime = appointment_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            else:
+                appointment_datetime = appointment_date.replace(hour=10, minute=0, second=0, microsecond=0)
+            
+            # Create appointment in database
+            appointment_id = str(uuid.uuid4())
+            appointment_data = {
+                "id": appointment_id,
+                "customer_id": customer_id,
+                "agency_id": agency_id,
+                "appointment_date": appointment_datetime,
+                "status": "pending",
+                "source": "whatsapp_ai",
+                "notes": f"Cita agendada automáticamente por IA desde WhatsApp. Mensaje original: {user_message[:100]}",
+                "created_at": datetime.utcnow()
+            }
+            
+            await appointments_collection.insert_one(appointment_data)
+            
+            return {
+                "created": True,
+                "appointment_id": appointment_id,
+                "date": appointment_datetime.strftime("%d/%m/%Y"),
+                "time": appointment_datetime.strftime("%H:%M"),
+                "datetime": appointment_datetime
+            }
+        except Exception as e:
+            print(f"Error creating appointment: {e}")
+            return None
+    
+    return None
 
 # WhatsApp webhook verification (GET and HEAD)
 @router.api_route("/webhook", methods=["GET", "HEAD"])
