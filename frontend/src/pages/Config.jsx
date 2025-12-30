@@ -240,16 +240,45 @@ const Config = () => {
                   <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
                     <p className="text-sm font-medium mb-2">📍 URL del Webhook:</p>
                     <div className="flex items-center gap-2">
-                      <code className="text-xs bg-white dark:bg-gray-900 p-2 rounded flex-1">
-                        {window.location.origin}/api/whatsapp/webhook
+                      <code className="text-xs bg-white dark:bg-gray-900 p-2 rounded flex-1 select-all" id="webhook-url">
+                        https://autodealer-ai.preview.emergentagent.com/api/whatsapp/webhook
                       </code>
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/api/whatsapp/webhook`);
-                          toast.success('URL copiada al portapapeles');
+                          const url = 'https://autodealer-ai.preview.emergentagent.com/api/whatsapp/webhook';
+                          try {
+                            // Try modern clipboard API first
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                              navigator.clipboard.writeText(url).then(() => {
+                                toast.success('URL copiada al portapapeles');
+                              }).catch(() => {
+                                // Fallback: select the text
+                                const el = document.getElementById('webhook-url');
+                                if (el) {
+                                  const range = document.createRange();
+                                  range.selectNodeContents(el);
+                                  window.getSelection().removeAllRanges();
+                                  window.getSelection().addRange(range);
+                                  toast.info('Texto seleccionado - usa Ctrl+C para copiar');
+                                }
+                              });
+                            } else {
+                              // Fallback for older browsers
+                              const el = document.getElementById('webhook-url');
+                              if (el) {
+                                const range = document.createRange();
+                                range.selectNodeContents(el);
+                                window.getSelection().removeAllRanges();
+                                window.getSelection().addRange(range);
+                                toast.info('Texto seleccionado - usa Ctrl+C para copiar');
+                              }
+                            }
+                          } catch (err) {
+                            toast.error('No se pudo copiar. Selecciona el texto manualmente.');
+                          }
                         }}
                       >
                         Copiar
