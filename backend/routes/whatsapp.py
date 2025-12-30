@@ -253,7 +253,7 @@ async def process_incoming_message(agency_id: str, from_phone: str, message_text
             "agency_id": agency_id,
             "name": from_phone,
             "phone": from_phone,
-            "source": "organic",
+            "source": "whatsapp",
             "created_at": datetime.utcnow()
         }
         await customers_collection.insert_one(customer)
@@ -295,8 +295,29 @@ async def process_incoming_message(agency_id: str, from_phone: str, message_text
     }
     await messages_collection.insert_one(incoming_msg)
     
+    # Try to detect and create appointment
+    appointment_info = await detect_and_create_appointment(agency_id, customer_id, message_text, conversation_id)
+    
     # Generate AI response
-    response_text = await generate_ai_response(agency_id, conversation_id, message_text)
+    if appointment_info and appointment_info.get("created"):
+        # Appointment was created, generate confirmation response
+        response_text = f"✅ ¡Excelente! He agendado tu cita:\n\n"
+        response_text += f"📅 Fecha: {appointment_info['date']}\n"
+        response_text += f"🕐 Hora: {appointment_info['time']}\n\n"
+        
+        # Get agency info for address
+        agency = await agencies_collection.find_one({"id": agency_id}, {"_id": 0})
+        if agency:
+            if agency.get('address'):
+                response_text += f"📍 Dirección: {agency['address']}\n"
+            if agency.get('phone'):
+                response_text += f"📞 Teléfono: {agency['phone']}\n"
+        
+        response_text += "\n¡Te esperamos! Si necesitas cambiar la fecha u hora, solo avísame."
+        print(f"📅 Appointment created: {appointment_info}")
+    else:
+        # No appointment detected, use regular AI response
+        response_text = await generate_ai_response(agency_id, conversation_id, message_text)
     
     # Save outgoing message
     outgoing_msg = {
