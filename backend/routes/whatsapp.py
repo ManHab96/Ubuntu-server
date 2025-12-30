@@ -16,6 +16,9 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
 
+# Default verify token (can be overridden by agency config)
+DEFAULT_VERIFY_TOKEN = "Ventas123"
+
 # WhatsApp webhook verification (GET)
 @router.get("/webhook")
 async def verify_webhook(
@@ -35,13 +38,16 @@ async def verify_webhook(
     
     # Check if this is a verification request
     if hub_mode == "subscribe" and hub_challenge:
-        # For now, accept any verify token (you can add validation later)
-        # In production, validate hub_verify_token against your stored token
-        print(f"Webhook verified successfully!")
-        return PlainTextResponse(content=hub_challenge, status_code=200)
+        # Validate the verify token
+        if hub_verify_token == DEFAULT_VERIFY_TOKEN:
+            print(f"Webhook verified successfully with token: {hub_verify_token}")
+            return PlainTextResponse(content=hub_challenge, status_code=200)
+        else:
+            print(f"Invalid verify token: {hub_verify_token}, expected: {DEFAULT_VERIFY_TOKEN}")
+            return PlainTextResponse(content="Invalid verify token", status_code=403)
     
     # If not a valid verification request
-    return PlainTextResponse(content="Invalid verification request", status_code=400)
+    return PlainTextResponse(content="Invalid request", status_code=400)
 
 # WhatsApp webhook receiver (POST)
 @router.post("/webhook")
