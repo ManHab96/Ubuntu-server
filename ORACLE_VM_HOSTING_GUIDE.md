@@ -145,9 +145,19 @@ cat > .env << 'EOF'
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=automotive_agency
 CORS_ORIGINS=*
-EMERGENT_LLM_KEY=tu_emergent_key_aqui
 EOF
 ```
+
+> **⚠️ NOTA IMPORTANTE sobre la API de IA:**
+> 
+> La EMERGENT_LLM_KEY **solo funciona dentro de la plataforma Emergent**.
+> Para Oracle Cloud, debes usar tu propia API Key de Google Gemini.
+> 
+> 1. Obtén tu key en: https://aistudio.google.com/apikey
+> 2. Configúrala desde el **panel de administración** de tu app:
+>    - Inicia sesión → Configuración → IA → Pega tu API Key
+> 
+> Tu key actual de Google: `AIzaSyCBsDQdy7XXm...` (configúrala en el panel)
 
 ### 4.3 Configurar el Frontend
 ```bash
