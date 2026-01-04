@@ -241,14 +241,14 @@ const Config = () => {
                     <p className="text-sm font-medium mb-2">📍 URL del Webhook:</p>
                     <div className="flex items-center gap-2">
                       <code className="text-xs bg-white dark:bg-gray-900 p-2 rounded flex-1 select-all" id="webhook-url">
-                        https://autodealer-ai.preview.emergentagent.com/api/whatsapp/webhook
+                        http://10.0.2.15:8001/api/whatsapp/webhook
                       </code>
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const url = 'https://autodealer-ai.preview.emergentagent.com/api/whatsapp/webhook';
+                          const url = 'http://10.0.2.15:8001/api/whatsapp/webhook';
                           try {
                             // Try modern clipboard API first
                             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -334,9 +334,9 @@ const Config = () => {
                   <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900">
                     <HelpCircle className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="space-y-2">
-                      <p className="font-medium">Opción 1: Usar Emergent Universal Key (Recomendado)</p>
+                      <p className="font-medium">Opción 1: Usar tu propia API Key de Google (Recomendado)</p>
                       <p className="text-xs">
-                        Clave universal que funciona con Gemini 2.5 Flash. Ya está configurada y lista para usar. Los créditos se descuentan de tu balance en Emergent.
+                        Obtén tu API Key gratis en Google AI Studio. La Emergent Key solo funciona dentro de la plataforma Emergent 2.5 Flash. Ya está configurada y lista para usar. Los créditos se descuentan de tu balance en Emergent.
                       </p>
                       <Button
                         type="button"
