@@ -23,7 +23,7 @@ const AgencyForm = React.memo(function AgencyForm({
   submitLabel,
   loading,
   onCancel
-}) => {
+}) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -225,9 +225,15 @@ const Agencies = () => {
             <p className="text-muted-foreground mt-2">Gestiona tus agencias automotrices</p>
           </div>
           
-          <Dialog open={dialogOpen} onOpenChange={(setDialogOpen) =>
-            /*if (!open) resetForm();*/
-          }}>
+          <Dialog
+            open={dialogOpen}
+            onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) resetForm();
+              }}
+                   >
+
+          
             <DialogTrigger asChild>
               <Button data-testid="create-agency-btn">
                 <Plus className="mr-2 h-4 w-4" />
@@ -238,7 +244,7 @@ const Agencies = () => {
               <DialogHeader>
                 <DialogTitle>Crear Nueva Agencia</DialogTitle>
               </DialogHeader>
-/*Cambios hechos manualmente*/
+{/*Cambios hechos manualmente*/}
                <AgencyForm 
                formData={formData}
                setFormData={setFormData}
@@ -352,15 +358,18 @@ const Agencies = () => {
         </Card>
 
         {/* Edit Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={(setDialogOpen) => {
-          setEditDialogOpen(open);
-          if (!open) resetForm();
-        }}>
+        <Dialog
+         open={editDialogOpen}
+         onOpenChange={(open) => {
+         setEditDialogOpen(open);
+         if (!open) resetForm();
+                }}
+               >
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Editar Agencia</DialogTitle>
             </DialogHeader>
-//Aqui tambien
+           {/*Aqui tambien*/}
             <AgencyForm
              formData={formData}
              setFormData={setFormData}

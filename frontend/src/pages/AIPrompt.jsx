@@ -7,11 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAgency } from '../contexts/AgencyContext';
 
 const AIPrompt = () => {
   const { config, updateConfig } = useTheme();
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
+  const { activeAgency } = useAgency();
 
   useEffect(() => {
     if (config?.ai_system_prompt) {
@@ -22,7 +24,16 @@ const AIPrompt = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      await updateConfig({ ai_system_prompt: prompt });
+      if (!activeAgency?.id) {
+  toast.error("No hay una agencia activa");
+  return;
+}
+
+await updateConfig(
+  activeAgency.id,
+  { ai_system_prompt: prompt }
+);
+
       toast.success('Prompt actualizado exitosamente');
     } catch (error) {
       toast.error('Error al actualizar prompt');
