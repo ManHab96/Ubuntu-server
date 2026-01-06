@@ -79,8 +79,12 @@ async def update_agency(agency_id: str, agency_update: AgencyCreate, current_use
     return Agency(**updated)
 
 @router.delete("/{agency_id}")
-async def deactivate_agency(agency_id: str, current_user: dict = Depends(get_current_user)):
-    result = await agencies_collection.update_one({"id": agency_id}, {"$set": {"is_active": False}})
-    if result.matched_count == 0:
+async def delete_agency(agency_id: str, current_user: dict = Depends(get_current_user)):
+    result = await agencies_collection.delete_one({"id": agency_id})
+
+    if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Agency not found")
-    return {"message": "Agency deactivated successfully"}
+
+    return {"message": "Agency deleted successfully"}
+
+

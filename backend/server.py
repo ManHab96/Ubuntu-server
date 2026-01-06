@@ -22,8 +22,8 @@ db = client[os.environ.get('DB_NAME', 'automotive_agency')]
 # Create the main app
 app = FastAPI(title="Automotive Agency API")
 
-# Mount uploads directory for serving files
-uploads_dir = Path("/app/backend/uploads")
+# Mount uploads directory for serving files - USE RELATIVE PATH
+uploads_dir = ROOT_DIR / "uploads"
 uploads_dir.mkdir(exist_ok=True)
 
 # Route to serve uploaded files
@@ -49,32 +49,20 @@ app.include_router(config.router)
 app.include_router(whatsapp.router)
 app.include_router(dashboard.router)
 
-# Root endpoint
-@app.get("/api/")
-async def root():
-    return {"message": "Automotive Agency API", "status": "running"}
-
-# Health check
-@app.get("/api/health")
-async def health_check():
-    return {"status": "healthy"}
-
-# CORS middleware
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Health check endpoint
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "message": "API is running"}
 
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)

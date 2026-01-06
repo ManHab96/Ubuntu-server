@@ -16,6 +16,103 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+const AgencyForm = React.memo(function AgencyForm({
+  formData,
+  setFormData,
+  onSubmit,
+  submitLabel,
+  loading,
+  onCancel
+}) => {
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Nombre *</Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, name: e.target.value }))
+            }
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="phone">Teléfono *</Label>
+          <Input
+            id="phone"
+            value={formData.phone}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, phone: e.target.value }))
+            }
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="address">Dirección *</Label>
+        <Input
+          id="address"
+          value={formData.address}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, address: e.target.value }))
+          }
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="business_hours">Horarios de Atención *</Label>
+        <Input
+          id="business_hours"
+          value={formData.business_hours}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, business_hours: e.target.value }))
+          }
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="whatsapp_phone">WhatsApp</Label>
+          <Input
+            id="whatsapp_phone"
+            value={formData.whatsapp_phone}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, whatsapp_phone: e.target.value }))
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="google_maps_url">Google Maps URL</Label>
+          <Input
+            id="google_maps_url"
+            value={formData.google_maps_url}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, google_maps_url: e.target.value }))
+            }
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2 justify-end pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Guardando...' : submitLabel}
+        </Button>
+      </div>
+    </form>
+  );
+});
+
+
 const Agencies = () => {
   const { token } = useAuth();
   const { agencies, fetchAgencies, setActiveAgency, activeAgency } = useAgency();
@@ -118,97 +215,6 @@ const Agencies = () => {
     }
   };
 
-  const AgencyForm = ({ onSubmit, submitLabel }) => (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Nombre *</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-            data-testid="agency-name-input"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="phone">Teléfono *</Label>
-          <Input
-            id="phone"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            required
-            data-testid="agency-phone-input"
-          />
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="address">Dirección *</Label>
-        <Input
-          id="address"
-          value={formData.address}
-          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          required
-          data-testid="agency-address-input"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="business_hours">Horarios de Atención *</Label>
-        <Input
-          id="business_hours"
-          placeholder="Lun-Vie 9:00-18:00, Sáb 10:00-14:00"
-          value={formData.business_hours}
-          onChange={(e) => setFormData({ ...formData, business_hours: e.target.value })}
-          required
-          data-testid="agency-hours-input"
-        />
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="whatsapp_phone">WhatsApp</Label>
-          <Input
-            id="whatsapp_phone"
-            placeholder="521234567890"
-            value={formData.whatsapp_phone}
-            onChange={(e) => setFormData({ ...formData, whatsapp_phone: e.target.value })}
-            data-testid="agency-whatsapp-input"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="google_maps_url">Google Maps URL</Label>
-          <Input
-            id="google_maps_url"
-            placeholder="https://maps.google.com/..."
-            value={formData.google_maps_url}
-            onChange={(e) => setFormData({ ...formData, google_maps_url: e.target.value })}
-            data-testid="agency-maps-input"
-          />
-        </div>
-      </div>
-      
-      <div className="flex gap-2 justify-end pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setDialogOpen(false);
-            setEditDialogOpen(false);
-            resetForm();
-          }}
-        >
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={loading} data-testid="agency-submit-btn">
-          {loading ? 'Guardando...' : submitLabel}
-        </Button>
-      </div>
-    </form>
-  );
 
   return (
     <DashboardLayout>
@@ -219,9 +225,8 @@ const Agencies = () => {
             <p className="text-muted-foreground mt-2">Gestiona tus agencias automotrices</p>
           </div>
           
-          <Dialog open={dialogOpen} onOpenChange={(open) => {
-            setDialogOpen(open);
-            if (!open) resetForm();
+          <Dialog open={dialogOpen} onOpenChange={(setDialogOpen) =>
+            /*if (!open) resetForm();*/
           }}>
             <DialogTrigger asChild>
               <Button data-testid="create-agency-btn">
@@ -233,7 +238,19 @@ const Agencies = () => {
               <DialogHeader>
                 <DialogTitle>Crear Nueva Agencia</DialogTitle>
               </DialogHeader>
-              <AgencyForm onSubmit={handleSubmit} submitLabel="Crear Agencia" />
+/*Cambios hechos manualmente*/
+               <AgencyForm 
+               formData={formData}
+               setFormData={setFormData}
+               onSubmit={handleSubmit}
+               submitLabel="Crear Agencia"
+               loading={loading}
+               onCancel={() => {
+               setDialogOpen(false);
+               resetForm();
+               }}
+               />
+
             </DialogContent>
           </Dialog>
         </div>
@@ -335,7 +352,7 @@ const Agencies = () => {
         </Card>
 
         {/* Edit Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        <Dialog open={editDialogOpen} onOpenChange={(setDialogOpen) => {
           setEditDialogOpen(open);
           if (!open) resetForm();
         }}>
@@ -343,7 +360,18 @@ const Agencies = () => {
             <DialogHeader>
               <DialogTitle>Editar Agencia</DialogTitle>
             </DialogHeader>
-            <AgencyForm onSubmit={handleEdit} submitLabel="Guardar Cambios" />
+//Aqui tambien
+            <AgencyForm
+             formData={formData}
+             setFormData={setFormData}
+             onSubmit={handleEdit}
+             submitLabel="Guardar Cambios"
+             loading={loading}
+             onCancel={() => {
+             setEditDialogOpen(false);
+             resetForm();
+             }}
+             />
           </DialogContent>
         </Dialog>
       </div>
