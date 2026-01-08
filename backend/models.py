@@ -1,11 +1,13 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
+
 
 class UserRole(str, Enum):
     ADMIN = "admin"
     MANAGER = "manager"
+
 
 class AppointmentStatus(str, Enum):
     PENDING = "pending"
@@ -13,10 +15,13 @@ class AppointmentStatus(str, Enum):
     CANCELLED = "cancelled"
     COMPLETED = "completed"
 
+
 class LeadSource(str, Enum):
     ORGANIC = "organic"
     META_ADS = "meta_ads"
     WHATSAPP_LINK = "whatsapp_link"
+    AI_ASSISTANT = "ai_assistant"  # 🔹 NUEVO
+
 
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -27,15 +32,18 @@ class User(BaseModel):
     agency_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class UserCreate(BaseModel):
     email: str
     password: str
     name: str
     role: UserRole = UserRole.ADMIN
 
+
 class UserLogin(BaseModel):
     email: str
     password: str
+
 
 class Agency(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -49,6 +57,7 @@ class Agency(BaseModel):
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class AgencyCreate(BaseModel):
     name: str
     address: str
@@ -56,6 +65,7 @@ class AgencyCreate(BaseModel):
     google_maps_url: Optional[str] = None
     business_hours: str
     whatsapp_phone: Optional[str] = None
+
 
 class Car(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -70,6 +80,7 @@ class Car(BaseModel):
     images: List[str] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class CarCreate(BaseModel):
     agency_id: str
     brand: str
@@ -79,6 +90,7 @@ class CarCreate(BaseModel):
     description: Optional[str] = None
     is_available: bool = True
 
+
 class MediaFile(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
@@ -86,12 +98,13 @@ class MediaFile(BaseModel):
     filename: str
     file_path: str
     file_url: str
-    file_type: str  # image or pdf
+    file_type: str
     file_size: int
     original_size: Optional[int] = None
-    category: str  # car, agency, promotion
-    related_id: Optional[str] = None  # car_id or promotion_id
+    category: str
+    related_id: Optional[str] = None
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class Promotion(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -106,6 +119,7 @@ class Promotion(BaseModel):
     car_ids: List[str] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class PromotionCreate(BaseModel):
     agency_id: str
     title: str
@@ -113,6 +127,7 @@ class PromotionCreate(BaseModel):
     start_date: datetime
     end_date: datetime
     car_ids: List[str] = []
+
 
 class Customer(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -124,6 +139,7 @@ class Customer(BaseModel):
     source: LeadSource = LeadSource.ORGANIC
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class CustomerCreate(BaseModel):
     agency_id: str
     name: str
@@ -131,23 +147,48 @@ class CustomerCreate(BaseModel):
     email: Optional[str] = None
     source: LeadSource = LeadSource.ORGANIC
 
+
+# =========================
+# 📅 APPOINTMENTS (EXTENDIDO PARA IA)
+# =========================
+
 class Appointment(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
     agency_id: str
-    customer_id: str
+
+    # 🔹 ahora opcional (IA puede crear cita antes del customer)
+    customer_id: Optional[str] = None
+
     car_id: Optional[str] = None
     appointment_date: datetime
     status: AppointmentStatus = AppointmentStatus.PENDING
     notes: Optional[str] = None
+
+    # 🔹 NUEVOS CAMPOS IA
+    created_by_ai: bool = False
+    ai_prompt: Optional[str] = None
+    ai_extracted_data: Optional[Dict[str, Any]] = None
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class AppointmentCreate(BaseModel):
     agency_id: str
-    customer_id: str
+    customer_id: Optional[str] = None
     car_id: Optional[str] = None
     appointment_date: datetime
     notes: Optional[str] = None
+
+    # 🔹 IA
+    created_by_ai: bool = False
+    ai_prompt: Optional[str] = None
+    ai_extracted_data: Optional[Dict[str, Any]] = None
+
+
+# =========================
+# 💬 CONVERSATIONS
+# =========================
 
 class Message(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -156,6 +197,7 @@ class Message(BaseModel):
     from_customer: bool
     message_text: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
 
 class Conversation(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -166,6 +208,11 @@ class Conversation(BaseModel):
     last_message: Optional[str] = None
     last_message_at: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# =========================
+# ⚙️ SYSTEM CONFIG
+# =========================
 
 class SystemConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -186,6 +233,7 @@ class SystemConfig(BaseModel):
     promotional_link_message: str = "Hola, estoy interesado en conocer más sobre sus vehículos."
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class SystemConfigUpdate(BaseModel):
     whatsapp_access_token: Optional[str] = None
     whatsapp_phone_number_id: Optional[str] = None
@@ -200,6 +248,7 @@ class SystemConfigUpdate(BaseModel):
     brand_name: Optional[str] = None
     brand_description: Optional[str] = None
     promotional_link_message: Optional[str] = None
+
 
 class DashboardMetrics(BaseModel):
     appointments_today: int

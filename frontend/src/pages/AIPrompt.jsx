@@ -16,10 +16,10 @@ const AIPrompt = () => {
   const { activeAgency } = useAgency();
 
   useEffect(() => {
-    if (config?.ai_system_prompt) {
-      setPrompt(config.ai_system_prompt);
-    }
-  }, [config]);
+  if (config?.ai_system_prompt) {
+    setPrompt(config.ai_system_prompt);
+  }
+}, [config]);
 
   const handleSave = async () => {
     setLoading(true);

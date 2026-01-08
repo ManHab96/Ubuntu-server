@@ -29,6 +29,10 @@ async def update_config(
     config_update: SystemConfigUpdate,
     current_user: dict = Depends(get_current_user)
 ):
+    print("USER DESDE TOKEN:", current_user)
+    print("AGENCY ID PARAM:", agency_id)
+    print("BODY RECIBIDO:", config_update)
+
     existing = await system_config_collection.find_one(
         {"agency_id": agency_id}
     )

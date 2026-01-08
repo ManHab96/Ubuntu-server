@@ -3,12 +3,13 @@ module.exports = {
     {
       name: 'backend',
       cwd: '/home/ubuntu/agencia-automotriz/backend',
-      script: 'venv/bin/uvicorn',
+      script: '/home/ubuntu/agencia-automotriz/backend/venv/bin/uvicorn',
       args: 'server:app --host 0.0.0.0 --port 8001',
       interpreter: 'none',
       env: {
         MONGO_URL: 'mongodb://localhost:27017',
-        DB_NAME: 'automotive_agency'
+        DB_NAME: 'automotive_agency',
+        PYTHONUNBUFFERED: '1'
       }
     },
     {

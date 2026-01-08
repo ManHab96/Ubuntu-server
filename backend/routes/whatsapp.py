@@ -13,6 +13,9 @@ from datetime import datetime, timedelta
 from dateutil import parser as date_parser
 import os
 
+#esto es  la citas con IA
+from services.ai_service import handle_ai_action
+
 # Import Google Generative AI directly (replaces emergentintegrations)
 from google import genai
 
@@ -354,29 +357,95 @@ async def test_chat(request: dict, current_user: dict = Depends(get_current_user
     message = request.get("message")
     phone = request.get("phone", "+521234567890")
     agency_id = request.get("agency_id")
+
     if not message or not agency_id:
         raise HTTPException(status_code=400, detail="Message and agency_id required")
 
-    customer = await customers_collection.find_one({"phone": phone, "agency_id": agency_id})
+    # ---------- CUSTOMER ----------
+    customer = await customers_collection.find_one({
+        "phone": phone,
+        "agency_id": agency_id
+    })
+
     if not customer:
         customer_id = str(uuid.uuid4())
-        customer = {"id": customer_id, "agency_id": agency_id, "name": "Usuario Prueba", "phone": phone, "source": "organic", "created_at": datetime.utcnow()}
+        customer = {
+            "id": customer_id,
+            "agency_id": agency_id,
+            "name": "Usuario Prueba",
+            "phone": phone,
+            "source": "org"
+        }
         await customers_collection.insert_one(customer)
     else:
         customer_id = customer["id"]
 
-    conversation = await conversations_collection.find_one({"agency_id": agency_id, "customer_id": customer_id})
+    # ---------- CONVERSATION ----------
+    conversation = await conversations_collection.find_one({
+        "agency_id": agency_id,
+        "customer_id": customer_id
+    })
+
     if not conversation:
         conversation_id = str(uuid.uuid4())
-        conversation = {"id": conversation_id, "agency_id": agency_id, "customer_id": customer_id, "whatsapp_phone": phone, "last_message": message, "last_message_at": datetime.utcnow(), "created_at": datetime.utcnow()}
+        conversation = {
+            "id": conversation_id,
+            "agency_id": agency_id,
+            "customer_id": customer_id,
+            "whatsapp_phone": phone
+        }
         await conversations_collection.insert_one(conversation)
     else:
         conversation_id = conversation["id"]
-        await conversations_collection.update_one({"id": conversation_id}, {"$set": {"last_message": message, "last_message_at": datetime.utcnow()}})
 
-    user_msg = {"id": str(uuid.uuid4()), "conversation_id": conversation_id, "from_customer": True, "message_text": message, "timestamp": datetime.utcnow()}
+    await conversations_collection.update_one(
+        {"id": conversation_id},
+        {"$set": {"last_message": message, "last_message_at": datetime.utcnow()}}
+    )
+
+    # ---------- MENSAJE DEL USUARIO ----------
+    user_msg = {
+        "id": str(uuid.uuid4()),
+        "conversation_id": conversation_id,
+        "from_customer": True,
+        "message_text": message,
+        "timestamp": datetime.utcnow()
+    }
     await messages_collection.insert_one(user_msg)
-    response_text = await generate_ai_response(agency_id, conversation_id, message)
-    ai_msg = {"id": str(uuid.uuid4()), "conversation_id": conversation_id, "from_customer": False, "message_text": response_text, "timestamp": datetime.utcnow()}
+
+    # ---------- IA ----------
+    response_text = await generate_ai_response(
+        agency_id,
+        conversation_id,
+        message
+    )
+
+    # 🔥 CICLO IA → ACCIONES
+    action_result = await handle_ai_action(
+        ai_response=response_text,
+        agency_id=agency_id,
+        customer_id=customer_id
+    )
+
+    final_response = response_text
+    if action_result:
+        final_response = action_result.get(
+            "message",
+            "📅 Tu cita ha sido agendada correctamente"
+        )
+
+    # ---------- MENSAJE IA ----------
+    ai_msg = {
+        "id": str(uuid.uuid4()),
+        "conversation_id": conversation_id,
+        "from_customer": False,
+        "message_text": final_response,
+        "timestamp": datetime.utcnow()
+    }
     await messages_collection.insert_one(ai_msg)
-    return {"status": "success", "response": response_text, "conversation_id": conversation_id}
+
+    return {
+        "status": "success",
+        "response": final_response,
+        "conversation_id": conversation_id
+    }
