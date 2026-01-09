@@ -1,9 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from database import (
-    system_config_collection, conversations_collection, messages_collection,
-    customers_collection, cars_collection, promotions_collection, agencies_collection,
-    appointments_collection
-)
+    system_config_collection,
+    conversations_collection,
+    messages_collection,
+    customers_collection,
+    cars_collection,
+    promotions_collection,
+    agencies_collection,
+    appointments_collection)
 from auth import get_current_user
 import httpx
 import uuid
@@ -13,11 +17,15 @@ from datetime import datetime, timedelta
 from dateutil import parser as date_parser
 import os
 
-#esto es  la citas con IA
+# esto es  la citas con IA
 from services.ai_service import handle_ai_action
-
+from pydantic import BaseModel
+from services.ai_service import handle_ai_action
 # Import Google Generative AI directly (replaces emergentintegrations)
 from google import genai
+
+# estructura de JSON
+import json
 
 router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
 
@@ -29,17 +37,55 @@ DAYS_MAP = {
 }
 
 MONTHS_MAP = {
-    'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6,
-    'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
-}
+    'enero': 1,
+    'febrero': 2,
+    'marzo': 3,
+    'abril': 4,
+    'mayo': 5,
+    'junio': 6,
+    'julio': 7,
+    'agosto': 8,
+    'septiembre': 9,
+    'octubre': 10,
+    'noviembre': 11,
+    'diciembre': 12}
 
-async def detect_and_create_appointment(agency_id: str, customer_id: str, user_message: str, conversation_id: str) -> dict:
+
+async def detect_and_create_appointment(
+        agency_id: str,
+        customer_id: str,
+        user_message: str,
+        conversation_id: str) -> dict:
     message_lower = user_message.lower()
-    appointment_keywords = ['cita', 'agendar', 'reservar', 'apartar', 'ir', 'visitar', 'voy', 'iré', 'ire', 'paso', 'llego']
-    time_keywords = ['hora', 'mañana', 'tarde', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+    appointment_keywords = [
+        'cita',
+        'agendar',
+        'reservar',
+        'apartar',
+        'ir',
+        'visitar',
+        'voy',
+        'iré',
+        'ire',
+        'paso',
+        'llego']
+    time_keywords = [
+        'hora',
+        'mañana',
+        'tarde',
+        'lunes',
+        'martes',
+        'miércoles',
+        'jueves',
+        'viernes',
+        'sábado',
+        'domingo']
 
-    has_appointment_intent = any(kw in message_lower for kw in appointment_keywords)
-    has_time_reference = any(kw in message_lower for kw in time_keywords) or re.search(r'\d{1,2}(?::\d{2})?\s*(?:am|pm|hrs?)?', message_lower)
+    has_appointment_intent = any(
+        kw in message_lower for kw in appointment_keywords)
+    has_time_reference = any(
+        kw in message_lower for kw in time_keywords) or re.search(
+        r'\d{1,2}(?::\d{2})?\s*(?:am|pm|hrs?)?', message_lower)
 
     if not (has_appointment_intent and has_time_reference):
         return None
@@ -63,7 +109,9 @@ async def detect_and_create_appointment(agency_id: str, customer_id: str, user_m
             appointment_date = now + timedelta(days=days_ahead)
             break
 
-    date_match = re.search(r'(\d{1,2})\s*(?:de\s+)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)', message_lower)
+    date_match = re.search(
+        r'(\d{1,2})\s*(?:de\s+)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)',
+        message_lower)
     if date_match:
         day = int(date_match.group(1))
         month = MONTHS_MAP.get(date_match.group(2), now.month)
@@ -73,7 +121,9 @@ async def detect_and_create_appointment(agency_id: str, customer_id: str, user_m
         except ValueError:
             pass
 
-    time_match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm|hrs?|horas?)?', message_lower)
+    time_match = re.search(
+        r'(\d{1,2})(?::(\d{2}))?\s*(am|pm|hrs?|horas?)?',
+        message_lower)
     if time_match:
         hour = int(time_match.group(1))
         minute = int(time_match.group(2)) if time_match.group(2) else 0
@@ -93,9 +143,11 @@ async def detect_and_create_appointment(agency_id: str, customer_id: str, user_m
         try:
             if appointment_time:
                 hour, minute = map(int, appointment_time.split(':'))
-                appointment_datetime = appointment_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                appointment_datetime = appointment_date.replace(
+                    hour=hour, minute=minute, second=0, microsecond=0)
             else:
-                appointment_datetime = appointment_date.replace(hour=10, minute=0, second=0, microsecond=0)
+                appointment_datetime = appointment_date.replace(
+                    hour=10, minute=0, second=0, microsecond=0)
 
             appointment_id = str(uuid.uuid4())
             appointment_data = {
@@ -106,8 +158,7 @@ async def detect_and_create_appointment(agency_id: str, customer_id: str, user_m
                 "status": "pending",
                 "source": "whatsapp_ai",
                 "notes": f"Cita agendada automáticamente por IA. Mensaje: {user_message[:100]}",
-                "created_at": datetime.utcnow()
-            }
+                "created_at": datetime.utcnow()}
             await appointments_collection.insert_one(appointment_data)
             return {
                 "created": True,
@@ -120,6 +171,7 @@ async def detect_and_create_appointment(agency_id: str, customer_id: str, user_m
             print(f"Error creating appointment: {e}")
             return None
     return None
+
 
 @router.api_route("/webhook", methods=["GET", "HEAD"])
 async def verify_webhook(
@@ -134,10 +186,13 @@ async def verify_webhook(
     if hub_mode == "subscribe" and hub_challenge:
         if hub_verify_token == DEFAULT_VERIFY_TOKEN:
             return PlainTextResponse(content=hub_challenge, status_code=200)
-        return PlainTextResponse(content="Invalid verify token", status_code=403)
+        return PlainTextResponse(
+            content="Invalid verify token",
+            status_code=403)
     if not hub_mode and not hub_challenge and not hub_verify_token:
         return PlainTextResponse(content="Webhook is active", status_code=200)
     return PlainTextResponse(content="Invalid request", status_code=400)
+
 
 @router.post("/webhook")
 async def receive_whatsapp_message(request: Request):
@@ -167,11 +222,22 @@ async def receive_whatsapp_message(request: Request):
         print(f"Error processing webhook: {e}")
         return {"status": "error", "message": str(e)}
 
-async def process_incoming_message(agency_id: str, from_phone: str, message_text: str, message_id: str):
+
+async def process_incoming_message(
+        agency_id: str,
+        from_phone: str,
+        message_text: str,
+        message_id: str):
     customer = await customers_collection.find_one({"phone": from_phone, "agency_id": agency_id})
     if not customer:
         customer_id = str(uuid.uuid4())
-        customer = {"id": customer_id, "agency_id": agency_id, "name": from_phone, "phone": from_phone, "source": "whatsapp", "created_at": datetime.utcnow()}
+        customer = {
+            "id": customer_id,
+            "agency_id": agency_id,
+            "name": from_phone,
+            "phone": from_phone,
+            "source": "whatsapp",
+            "created_at": datetime.utcnow()}
         await customers_collection.insert_one(customer)
     else:
         customer_id = customer["id"]
@@ -179,13 +245,26 @@ async def process_incoming_message(agency_id: str, from_phone: str, message_text
     conversation = await conversations_collection.find_one({"agency_id": agency_id, "customer_id": customer_id})
     if not conversation:
         conversation_id = str(uuid.uuid4())
-        conversation = {"id": conversation_id, "agency_id": agency_id, "customer_id": customer_id, "whatsapp_phone": from_phone, "last_message": message_text, "last_message_at": datetime.utcnow(), "created_at": datetime.utcnow()}
+        conversation = {
+            "id": conversation_id,
+            "agency_id": agency_id,
+            "customer_id": customer_id,
+            "whatsapp_phone": from_phone,
+            "last_message": message_text,
+            "last_message_at": datetime.utcnow(),
+            "created_at": datetime.utcnow()}
         await conversations_collection.insert_one(conversation)
     else:
         conversation_id = conversation["id"]
         await conversations_collection.update_one({"id": conversation_id}, {"$set": {"last_message": message_text, "last_message_at": datetime.utcnow()}})
 
-    incoming_msg = {"id": str(uuid.uuid4()), "conversation_id": conversation_id, "from_customer": True, "message_text": message_text, "timestamp": datetime.utcnow()}
+    incoming_msg = {
+        "id": str(
+            uuid.uuid4()),
+        "conversation_id": conversation_id,
+        "from_customer": True,
+        "message_text": message_text,
+        "timestamp": datetime.utcnow()}
     await messages_collection.insert_one(incoming_msg)
 
     appointment_info = await detect_and_create_appointment(agency_id, customer_id, message_text, conversation_id)
@@ -202,17 +281,42 @@ async def process_incoming_message(agency_id: str, from_phone: str, message_text
     else:
         response_text = await generate_ai_response(agency_id, conversation_id, message_text)
 
-    outgoing_msg = {"id": str(uuid.uuid4()), "conversation_id": conversation_id, "from_customer": False, "message_text": response_text, "timestamp": datetime.utcnow()}
+    outgoing_msg = {
+        "id": str(
+            uuid.uuid4()),
+        "conversation_id": conversation_id,
+        "from_customer": False,
+        "message_text": response_text,
+        "timestamp": datetime.utcnow()}
     await messages_collection.insert_one(outgoing_msg)
     await send_whatsapp_message(agency_id, from_phone, response_text)
 
-async def generate_fallback_response(user_message: str, cars: list, promotions: list, agency: dict) -> str:
-    message_lower = user_message.lower()
-    agency_name = agency.get('name', 'nuestra agencia') if agency else 'nuestra agencia'
 
-    if any(word in message_lower for word in ['hola', 'buenos', 'buenas', 'hi', 'hey']):
+async def generate_fallback_response(
+        user_message: str,
+        cars: list,
+        promotions: list,
+        agency: dict) -> str:
+    message_lower = user_message.lower()
+    agency_name = agency.get(
+        'name', 'nuestra agencia') if agency else 'nuestra agencia'
+
+    if any(
+        word in message_lower for word in [
+            'hola',
+            'buenos',
+            'buenas',
+            'hi',
+            'hey']):
         return f"¡Hola! Bienvenido a {agency_name}. ¿Te gustaría conocer nuestros autos disponibles, promociones, o agendar una cita?"
-    if any(word in message_lower for word in ['auto', 'autos', 'carro', 'carros', 'vehículo', 'vehiculo']):
+    if any(
+        word in message_lower for word in [
+            'auto',
+            'autos',
+            'carro',
+            'carros',
+            'vehículo',
+            'vehiculo']):
         if cars:
             response = f"Tenemos {len(cars)} vehículos disponibles:\n\n"
             for car in cars[:5]:
@@ -223,7 +327,12 @@ async def generate_fallback_response(user_message: str, cars: list, promotions: 
             response += "\n¿Te gustaría agendar una cita para verlos?"
             return response
         return "Estamos actualizando nuestro inventario. ¿Te gustaría que un asesor te contacte?"
-    if any(word in message_lower for word in ['promoción', 'promocion', 'oferta', 'descuento']):
+    if any(
+        word in message_lower for word in [
+            'promoción',
+            'promocion',
+            'oferta',
+            'descuento']):
         if promotions:
             response = "¡Promociones especiales!\n\n"
             for promo in promotions[:3]:
@@ -232,9 +341,19 @@ async def generate_fallback_response(user_message: str, cars: list, promotions: 
         return "No tenemos promociones activas ahora. ¿Puedo ayudarte a encontrar un auto?"
     if any(word in message_lower for word in ['cita', 'agendar', 'visitar']):
         return "¡Excelente! ¿Qué día y hora te funcionaría para visitarnos?"
-    if any(word in message_lower for word in ['precio', 'costo', 'cuanto', 'financiamiento']):
+    if any(
+        word in message_lower for word in [
+            'precio',
+            'costo',
+            'cuanto',
+            'financiamiento']):
         return "Tenemos precios competitivos y opciones de financiamiento. ¿Qué modelo te interesa?"
-    if any(word in message_lower for word in ['horario', 'ubicación', 'direccion', 'donde']):
+    if any(
+        word in message_lower for word in [
+            'horario',
+            'ubicación',
+            'direccion',
+            'donde']):
         response = "Nuestra información:\n\n"
         if agency:
             if agency.get('address'):
@@ -244,11 +363,20 @@ async def generate_fallback_response(user_message: str, cars: list, promotions: 
             if agency.get('business_hours'):
                 response += f"🕐 {agency['business_hours']}\n"
         return response
-    if any(word in message_lower for word in ['gracias', 'ok', 'vale', 'perfecto']):
+    if any(
+        word in message_lower for word in [
+            'gracias',
+            'ok',
+            'vale',
+            'perfecto']):
         return "¡Con gusto! ¿Algo más en que pueda ayudarte? 🚗"
     return f"Gracias por contactar a {agency_name}. Puedo ayudarte con:\n• Autos disponibles\n• Promociones\n• Agendar cita\n• Ubicación\n\n¿Qué necesitas?"
 
-async def generate_ai_response(agency_id: str, conversation_id: str, user_message: str) -> str:
+
+async def generate_ai_response(
+        agency_id: str,
+        conversation_id: str,
+        user_message: str) -> str:
     try:
         config = await system_config_collection.find_one({"agency_id": agency_id})
         if not config:
@@ -260,11 +388,14 @@ async def generate_ai_response(agency_id: str, conversation_id: str, user_messag
         agency = await agencies_collection.find_one({"id": agency_id}, {"_id": 0})
 
         api_key = config.get("gemini_api_key", "")
-        # EMERGENT_LLM_KEY only works inside Emergent platform - use fallback outside
+        # EMERGENT_LLM_KEY only works inside Emergent platform - use fallback
+        # outside
         if not api_key or api_key == "EMERGENT_LLM_KEY" or "emergent" in api_key.lower():
             return await generate_fallback_response(user_message, cars, promotions, agency)
 
-        system_prompt = config.get("ai_system_prompt", "Eres un asistente de ventas automotriz.")
+        system_prompt = config.get(
+            "ai_system_prompt",
+            "Eres un asistente de ventas automotriz.")
         conv_messages = await messages_collection.find({"conversation_id": conversation_id}, {"_id": 0}).sort("timestamp", -1).limit(10).to_list(10)
         conv_messages.reverse()
 
@@ -294,7 +425,7 @@ Autos disponibles:"""
 
         full_prompt = f"{context}\n\nHistorial:\n{history_text}\nCliente: {user_message}\n\nAsistente:"
 
-        ## === MIGRACIÓN GEMINI SDK (google.genai) ===
+        # === MIGRACIÓN GEMINI SDK (google.genai) ===
         client = genai.Client(api_key=api_key)
 
         response = await asyncio.wait_for(
@@ -325,9 +456,8 @@ Autos disponibles:"""
                 {"_id": 0}
             ).to_list(100)
             return await generate_fallback_response(user_message, cars, promotions, agency)
-        except:
+        except BaseException:
             return "Gracias por tu mensaje. Un asesor te contactará pronto."
-
 
 
 async def send_whatsapp_message(agency_id: str, to_phone: str, message: str):
@@ -340,112 +470,108 @@ async def send_whatsapp_message(agency_id: str, to_phone: str, message: str):
         if not access_token or not phone_number_id:
             return
         url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
-        headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
-        data = {"messaging_product": "whatsapp", "to": to_phone, "type": "text", "text": {"body": message}}
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"}
+        data = {
+            "messaging_product": "whatsapp",
+            "to": to_phone,
+            "type": "text",
+            "text": {
+                "body": message}}
         async with httpx.AsyncClient() as client:
             await client.post(url, headers=headers, json=data)
     except Exception as e:
         print(f"Error sending WhatsApp: {e}")
 
+
 @router.post("/send")
-async def send_message(agency_id: str, to_phone: str, message: str, current_user: dict = Depends(get_current_user)):
+async def send_message(
+        agency_id: str,
+        to_phone: str,
+        message: str,
+        current_user: dict = Depends(get_current_user)):
     await send_whatsapp_message(agency_id, to_phone, message)
     return {"status": "sent"}
 
-@router.post("/test-chat")
-async def test_chat(request: dict, current_user: dict = Depends(get_current_user)):
-    message = request.get("message")
-    phone = request.get("phone", "+521234567890")
-    agency_id = request.get("agency_id")
 
-    if not message or not agency_id:
-        raise HTTPException(status_code=400, detail="Message and agency_id required")
+class WhatsAppTestChat(BaseModel):
+    agency_id: str
+    message: str
+    conversation_id: str | None = None
 
-    # ---------- CUSTOMER ----------
-    customer = await customers_collection.find_one({
-        "phone": phone,
-        "agency_id": agency_id
-    })
+def extract_json_from_ai(text: str):
+    import json
+    import re
 
-    if not customer:
-        customer_id = str(uuid.uuid4())
-        customer = {
-            "id": customer_id,
-            "agency_id": agency_id,
-            "name": "Usuario Prueba",
-            "phone": phone,
-            "source": "org"
-        }
-        await customers_collection.insert_one(customer)
-    else:
-        customer_id = customer["id"]
+    if not text:
+        return None
 
-    # ---------- CONVERSATION ----------
-    conversation = await conversations_collection.find_one({
-        "agency_id": agency_id,
-        "customer_id": customer_id
-    })
+    # elimina ```json ``` de la IA
+    cleaned = re.sub(r"```json|```", "", text).strip()
 
-    if not conversation:
-        conversation_id = str(uuid.uuid4())
-        conversation = {
-            "id": conversation_id,
-            "agency_id": agency_id,
-            "customer_id": customer_id,
-            "whatsapp_phone": phone
-        }
-        await conversations_collection.insert_one(conversation)
-    else:
-        conversation_id = conversation["id"]
+    match = re.search(r"\{[\s\S]*\}", cleaned)
+    if not match:
+        return None
 
-    await conversations_collection.update_one(
-        {"id": conversation_id},
-        {"$set": {"last_message": message, "last_message_at": datetime.utcnow()}}
-    )
+    try:
+        return json.loads(match.group())
+    except Exception:
+        return None
 
-    # ---------- MENSAJE DEL USUARIO ----------
-    user_msg = {
-        "id": str(uuid.uuid4()),
-        "conversation_id": conversation_id,
-        "from_customer": True,
-        "message_text": message,
-        "timestamp": datetime.utcnow()
-    }
-    await messages_collection.insert_one(user_msg)
-
-    # ---------- IA ----------
-    response_text = await generate_ai_response(
-        agency_id,
-        conversation_id,
-        message
-    )
-
-    # 🔥 CICLO IA → ACCIONES
-    action_result = await handle_ai_action(
-        ai_response=response_text,
+async def process_chat_message(
+    *,
+    agency_id: str,
+    conversation_id: str,
+    message: str
+):
+    ai_response = await generate_ai_response(
         agency_id=agency_id,
-        customer_id=customer_id
+        conversation_id=conversation_id,
+        user_message=message
     )
 
-    final_response = response_text
-    if action_result:
-        final_response = action_result.get(
-            "message",
-            "📅 Tu cita ha sido agendada correctamente"
-        )
+    action_payload = extract_json_from_ai(ai_response)
 
-    # ---------- MENSAJE IA ----------
-    ai_msg = {
-        "id": str(uuid.uuid4()),
-        "conversation_id": conversation_id,
-        "from_customer": False,
-        "message_text": final_response,
-        "timestamp": datetime.utcnow()
+    # 🟢 SI HAY ACCIÓN → SE EJECUTA
+    if action_payload and "action" in action_payload:
+        action_result = await handle_ai_action(action_payload)
+
+        return {
+            "type": "text",
+            "message": action_result["message"]
+        }
+
+    # 🟡 SOLO TEXTO NORMAL
+    return {
+        "type": "text",
+        "message": ai_response
     }
-    await messages_collection.insert_one(ai_msg)
+
+@router.post("/test-chat")
+async def test_chat(payload: WhatsAppTestChat):
+
+    conversation_id = payload.conversation_id or str(uuid.uuid4())
+
+    result = await process_chat_message(
+        agency_id=payload.agency_id,
+        conversation_id=conversation_id,
+        message=payload.message
+    )
 
     return {
         "status": "success",
-        "response": final_response,
+        "response": result["message"],
         "conversation_id": conversation_id
     }
+
+#result = await process_chat_message(
+    #agency_id=agency_id,
+    #conversation_id=conversation_id,
+    #message=incoming_text
+#)
+
+#send_whatsapp_message(
+    #to=phone_number,
+    #message=result["message"]
+#)

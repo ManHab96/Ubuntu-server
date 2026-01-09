@@ -60,37 +60,40 @@ export const ThemeProvider = ({ children }) => {
    * updates ejemplo:
    * { ai_system_prompt: "texto..." }
    */
-  const updateConfig = async (agencyId, updates) => {
-    if (!agencyId || typeof agencyId !== "string") {
-      console.error("agencyId inválido:", agencyId);
-      throw new Error("agencyId inválido");
-    }
 
-    try {
-      console.log("PUT CONFIG →", agencyId, updates);
+const updateConfig = async (updates) => {
+  if (!activeAgency?.id) {
+    console.error("No hay agencia activa");
+    throw new Error("No hay agencia activa");
+  }
 
-      const response = await axios.put(
-        `${API_URL}/api/config/${agencyId}`,
-        updates,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+const agencyId = activeAgency.id;
+   
+  try {
+    console.log("PUT CONFIG →", activeAgency.id, updates);
 
-      setConfig(response.data);
-      applyTheme(response.data);
-      return response.data;
-    } catch (error) {
-      console.error(
-        "Error updating config:",
-        error.response?.data || error
-      );
-      throw error;
-    }
-  };
+    const response = await axios.put(
+      `${API_URL}/api/config/${activeAgency.id}`,
+      updates,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    setConfig(response.data);
+    applyTheme(response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error updating config:",
+      error.response?.data || error
+    );
+    throw error;
+  }
+};
 
   return (
     <ThemeContext.Provider value={{ config, updateConfig, fetchConfig }}>
