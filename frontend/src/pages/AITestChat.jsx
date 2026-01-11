@@ -19,6 +19,7 @@ const AITestChat = () => {
   const { token } = useAuth();
   const { activeAgency } = useAgency();
   const [messages, setMessages] = useState([]);
+  const [conversationId, setConversationId] = useState(null);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -62,14 +63,16 @@ const AITestChat = () => {
     try {
       // Simulate WhatsApp message processing
       const response = await axios.post(
-        `${API_URL}/api/whatsapp/test-chat`,
+        `${API_URL}/api/test-chat`,
         {
           message: inputMessage,
-          phone: testPhone,
+          conversation_id: conversationId,
           agency_id: activeAgency.id
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+    setConversationId(response.data.conversation_id);
 
       const aiMessage = {
         id: (Date.now() + 1).toString(),
@@ -101,6 +104,7 @@ const AITestChat = () => {
       from_customer: false,
       timestamp: new Date().toISOString()
     }]);
+    setConversationId(null);
   };
 
   if (!activeAgency) {

@@ -16,11 +16,13 @@ import re
 from datetime import datetime, timedelta
 from dateutil import parser as date_parser
 import os
+from models import LeadSource
+
 
 # esto es  la citas con IA
 from services.ai_service import handle_ai_action
 from pydantic import BaseModel
-from services.ai_service import handle_ai_action
+
 # Import Google Generative AI directly (replaces emergentintegrations)
 from google import genai
 
@@ -156,7 +158,7 @@ async def detect_and_create_appointment(
                 "agency_id": agency_id,
                 "appointment_date": appointment_datetime,
                 "status": "pending",
-                "source": "whatsapp_ai",
+                "source": LeadSource.WHATSAPP,
                 "notes": f"Cita agendada automáticamente por IA. Mensaje: {user_message[:100]}",
                 "created_at": datetime.utcnow()}
             await appointments_collection.insert_one(appointment_data)
@@ -236,7 +238,7 @@ async def process_incoming_message(
             "agency_id": agency_id,
             "name": from_phone,
             "phone": from_phone,
-            "source": "whatsapp",
+            "source": LeadSource.WHATSAPP,
             "created_at": datetime.utcnow()}
         await customers_collection.insert_one(customer)
     else:
@@ -494,84 +496,3 @@ async def send_message(
     await send_whatsapp_message(agency_id, to_phone, message)
     return {"status": "sent"}
 
-
-class WhatsAppTestChat(BaseModel):
-    agency_id: str
-    message: str
-    conversation_id: str | None = None
-
-def extract_json_from_ai(text: str):
-    import json
-    import re
-
-    if not text:
-        return None
-
-    # elimina ```json ``` de la IA
-    cleaned = re.sub(r"```json|```", "", text).strip()
-
-    match = re.search(r"\{[\s\S]*\}", cleaned)
-    if not match:
-        return None
-
-    try:
-        return json.loads(match.group())
-    except Exception:
-        return None
-
-async def process_chat_message(
-    *,
-    agency_id: str,
-    conversation_id: str,
-    message: str
-):
-    ai_response = await generate_ai_response(
-        agency_id=agency_id,
-        conversation_id=conversation_id,
-        user_message=message
-    )
-
-    action_payload = extract_json_from_ai(ai_response)
-
-    # 🟢 SI HAY ACCIÓN → SE EJECUTA
-    if action_payload and "action" in action_payload:
-        action_result = await handle_ai_action(action_payload)
-
-        return {
-            "type": "text",
-            "message": action_result["message"]
-        }
-
-    # 🟡 SOLO TEXTO NORMAL
-    return {
-        "type": "text",
-        "message": ai_response
-    }
-
-@router.post("/test-chat")
-async def test_chat(payload: WhatsAppTestChat):
-
-    conversation_id = payload.conversation_id or str(uuid.uuid4())
-
-    result = await process_chat_message(
-        agency_id=payload.agency_id,
-        conversation_id=conversation_id,
-        message=payload.message
-    )
-
-    return {
-        "status": "success",
-        "response": result["message"],
-        "conversation_id": conversation_id
-    }
-
-#result = await process_chat_message(
-    #agency_id=agency_id,
-    #conversation_id=conversation_id,
-    #message=incoming_text
-#)
-
-#send_whatsapp_message(
-    #to=phone_number,
-    #message=result["message"]
-#)

@@ -8,8 +8,12 @@ import os
 import logging
 from pathlib import Path
 
+#rutas test-chat
+#from routes import test_chat#
+#app.include_router(test_chat.router)
+
 # Import routes
-from routes import auth, agencies, cars, files, promotions, customers, appointments, conversations, config, whatsapp, dashboard
+from routes import auth, agencies, cars, files, promotions, customers, appointments, conversations, config, whatsapp,test_chat, dashboard
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -48,6 +52,7 @@ app.include_router(conversations.messages_router)
 app.include_router(config.router)
 app.include_router(whatsapp.router)
 app.include_router(dashboard.router)
+app.include_router(test_chat.router)
 
 # CORS configuration
 app.add_middleware(

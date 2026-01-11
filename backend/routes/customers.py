@@ -5,6 +5,7 @@ from database import customers_collection
 from auth import get_current_user
 import uuid
 from datetime import datetime
+from models import LeadSource
 
 router = APIRouter(prefix="/api/customers", tags=["customers"])
 

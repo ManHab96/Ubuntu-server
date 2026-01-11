@@ -23,7 +23,19 @@ async def handle_ai_action(action: dict) -> dict:
     # 🗓️ CREAR CITA
     # ─────────────────────────────
     if action_type == "create_appointment":
-        appointment = await create_appointment_from_ai(data)
+        customer_id = data.get("customer_id")
+        appointment_date = data.get("appointment_date")
+
+        if not customer_id or not appointment_date:
+            return {
+                "type": "send_message",
+                "message": "Falta información para crear la cita."
+            }
+
+        appointment = await create_appointment_from_ai(
+            customer_id=customer_id,
+            appointment_date=appointment_date
+        )
 
         fecha = appointment["appointment_date"]
         fecha_legible = (

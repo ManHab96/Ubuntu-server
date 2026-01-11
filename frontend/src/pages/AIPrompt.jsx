@@ -25,13 +25,12 @@ const AIPrompt = () => {
     setLoading(true);
     try {
       if (!activeAgency?.id) {
-  toast.error("No hay una agencia activa");
-  return;
+          toast.error("No hay una agencia activa");
+          return;
 }
 
-await updateConfig(
-  activeAgency.id,
-  { ai_system_prompt: prompt }
+      await updateConfig(
+          { ai_system_prompt: prompt }
 );
 
       toast.success('Prompt actualizado exitosamente');

@@ -19,8 +19,8 @@ class AppointmentStatus(str, Enum):
 class LeadSource(str, Enum):
     ORGANIC = "organic"
     META_ADS = "meta_ads"
-    WHATSAPP_LINK = "whatsapp_link"
-    AI_ASSISTANT = "ai_assistant"  # 🔹 NUEVO
+    REFERRAL = "referral"
+    WHATSAPP = "whatsapp"
 
 
 class User(BaseModel):
@@ -133,7 +133,7 @@ class Customer(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
     agency_id: str
-    name: str
+    name: Optional[str]= None
     phone: str
     email: Optional[str] = None
     source: LeadSource = LeadSource.ORGANIC
@@ -142,7 +142,7 @@ class Customer(BaseModel):
 
 class CustomerCreate(BaseModel):
     agency_id: str
-    name: str
+    name: Optional[str]= None
     phone: str
     email: Optional[str] = None
     source: LeadSource = LeadSource.ORGANIC
@@ -208,7 +208,8 @@ class Conversation(BaseModel):
     last_message: Optional[str] = None
     last_message_at: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-
+#agregamos para guardar conversaciones
+    conversation_state: Optional[Dict[str, Any]] = None
 
 # =========================
 # ⚙️ SYSTEM CONFIG
