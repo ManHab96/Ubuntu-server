@@ -90,9 +90,9 @@ class CarCreate(BaseModel):
     description: Optional[str] = None
     is_available: bool = True
 
-
 class MediaFile(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     agency_id: str
     filename: str
@@ -101,13 +101,22 @@ class MediaFile(BaseModel):
     file_type: str
     file_size: int
     original_size: Optional[int] = None
+
     category: str
     related_id: Optional[str] = None
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
 
+    # ⬇️ SOLO USADOS SI category === "promotion"
+    title: Optional[str] = None
+    description: Optional[str] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_active: Optional[bool] = None
+
+
+
 
 class Promotion(BaseModel):
-    model_config = ConfigDict(extra="ignore")
     id: str
     agency_id: str
     title: str
@@ -120,20 +129,19 @@ class Promotion(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class PromotionCreate(BaseModel):
-    agency_id: str
-    title: str
-    description: str
-    start_date: datetime
-    end_date: datetime
-    car_ids: List[str] = []
+class PromotionUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+
 
 
 class Customer(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
     agency_id: str
-    name: Optional[str]= None
     phone: str
     email: Optional[str] = None
     source: LeadSource = LeadSource.ORGANIC

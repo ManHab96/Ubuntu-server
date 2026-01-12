@@ -97,15 +97,20 @@ const Files = () => {
   const removeSelectedFile = (index) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
-
+  {/*codigo nuevo para carro*/}
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {
       toast.error('Selecciona al menos un archivo');
       return;
     }
 
-    setUploading(true);
+    if (category === 'car' && !relatedId) {
+      toast.error('Debes seleccionar un auto para asociar el archivo');
+      return;
+    }
 
+    setUploading(true);
+       
     try {
       for (const file of selectedFiles) {
         const formData = new FormData();
@@ -115,17 +120,13 @@ const Files = () => {
         if (relatedId) {
           formData.append('related_id', relatedId);
         }
-
-        await axios.post(
-          `${API_URL}/api/files/upload`,
-          formData,
-          {
-            headers: {
+        
+        await axios.post(`${API_URL}/api/files/upload`,formData,{
+           headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data'
-            }
-          }
-        );
+           },
+        });
       }
 
       toast.success(`${selectedFiles.length} archivo(s) subido(s) exitosamente`);
@@ -225,22 +226,32 @@ const Files = () => {
                 {/* Related Car Selection */}
                 {category === 'car' && (
                   <div className="space-y-2">
-                    <Label>Auto (opcional)</Label>
-                    <Select value={relatedId} onValueChange={setRelatedId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar auto" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Sin asociar</SelectItem>
-                        {cars.map((car) => (
-                          <SelectItem key={car.id} value={car.id}>
-                            {car.brand} {car.model} {car.year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>Auto</Label>
+                    
+                    {cars.length === 0 ? (
+                      <Alert variant="destructive">
+                         <AlertDescription>
+                            No existen autos en esta agencia. Debes crear un auto antes de subir archivos.
+                         </AlertDescription>
+                      </Alert>
+                    ) : (
+                      
+                      <Select value={relatedId} onValueChange={setRelatedId}>
+                        <SelectTrigger>
+                           <SelectValue placeholder="Seleccionar auto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                           {cars.map((car) => (
+                             <SelectItem key={car.id} value={car.id}>
+                                {car.brand} {car.model} {car.year}
+                             </SelectItem>
+                           ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 )}
+
 
                 {/* Drag & Drop Area */}
                 <div
@@ -322,7 +333,11 @@ const Files = () => {
                   </Button>
                   <Button
                     onClick={handleUpload}
-                    disabled={uploading || selectedFiles.length === 0}
+                    disabled={
+                      uploading ||
+                      selectedFiles.length === 0 ||
+                      (category === 'car' && !relatedId)
+                    }
                   >
                     {uploading ? 'Subiendo...' : `Subir ${selectedFiles.length} Archivo(s)`}
                   </Button>

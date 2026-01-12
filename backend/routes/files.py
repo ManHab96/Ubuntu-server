@@ -105,11 +105,14 @@ async def upload_file(
             {"$push": {"images": file_dict["file_url"]}}
         )
 
-    if category == "promotion" and related_id:
-        await promotions_collection.update_one(
-            {"id": related_id},
-            {"$set": {"file_id": file_id}}
-        )
+    if category == "promotion":
+        file_dict.update({
+            "title": None,
+            "description": None,
+            "start_date": None,
+            "end_date": None,
+            "is_active": False,
+        })
 
     return MediaFile(**file_dict)
 

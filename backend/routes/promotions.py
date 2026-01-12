@@ -1,77 +1,124 @@
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List
-from models import Promotion, PromotionCreate
-from database import promotions_collection
+from typing import List, Optional
+from datetime import datetime, timezone
+from bson import ObjectId
+from database import media_files_collection
 from auth import get_current_user
-import uuid
-from datetime import datetime
+from models import MediaFile, PromotionUpdate
 
 router = APIRouter(prefix="/api/promotions", tags=["promotions"])
 
-@router.post("/", response_model=Promotion)
-async def create_promotion(promotion: PromotionCreate, current_user: dict = Depends(get_current_user)):
-    promotion_id = str(uuid.uuid4())
-    
-    promotion_dict = {
-        "id": promotion_id,
-        **promotion.model_dump(),
-        "is_active": True,
-        "file_id": None,
-        "created_at": datetime.utcnow()
-    }
-    
-    await promotions_collection.insert_one(promotion_dict)
-    return Promotion(**promotion_dict)
+@router.get("/", response_model=List[MediaFile])
+async def get_promotions(
+    agency_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    promotions = []
 
-@router.get("/", response_model=List[Promotion])
-async def get_promotions(agency_id: str = None, current_user: dict = Depends(get_current_user)):
-    query = {}
-    if agency_id:
-        query["agency_id"] = agency_id
-    
-    promotions = await promotions_collection.find(query, {"_id": 0}).to_list(1000)
-    return [Promotion(**promo) for promo in promotions]
-
-@router.get("/active", response_model=List[Promotion])
-async def get_active_promotions(agency_id: str, current_user: dict = Depends(get_current_user)):
-    now = datetime.utcnow()
-    promotions = await promotions_collection.find({
+    cursor = media_files_collection.find({
         "agency_id": agency_id,
-        "is_active": True,
-        "start_date": {"$lte": now},
-        "end_date": {"$gte": now}
-    }, {"_id": 0}).to_list(1000)
-    return [Promotion(**promo) for promo in promotions]
+        "category": "promotion"
+    })
 
-@router.get("/{promotion_id}", response_model=Promotion)
-async def get_promotion(promotion_id: str, current_user: dict = Depends(get_current_user)):
-    promotion = await promotions_collection.find_one({"id": promotion_id}, {"_id": 0})
+    async for doc in cursor:
+        promotions.append(MediaFile(**doc))
+
+    return promotions
+
+
+
+@router.get("/{file_id}", response_model=MediaFile)
+async def get_promotion(
+    file_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    promo = await media_files_collection.find_one(
+        {
+            "id": file_id,
+            "category": "promotion"
+        },
+        {"_id": 0}
+    )
+
+    if not promo:
+        raise HTTPException(404, "Promotion not found")
+
+    return promo
+@router.patch("/{file_id}", response_model=MediaFile)
+
+async def update_promotion(
+    file_id: str,
+    data: PromotionUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+
+    result = await media_files_collection.find_one_and_update(
+        {
+            "id": file_id,
+            "category": "promotion"
+        },
+        {
+            "$set": update_data
+        },
+        return_document=True
+    )
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Promotion not found")
+
+    return MediaFile(**result)
+
+
+
+@router.patch("/{file_id}/toggle")
+async def toggle_promotion(
+    file_id: str,
+    is_active: bool,
+    current_user: dict = Depends(get_current_user)
+):
+    promotion = await media_files_collection.find_one({
+        "id": file_id,
+        "category": "promotion"
+    })
+
     if not promotion:
         raise HTTPException(status_code=404, detail="Promotion not found")
-    return Promotion(**promotion)
 
-@router.put("/{promotion_id}", response_model=Promotion)
-async def update_promotion(promotion_id: str, promotion_update: PromotionCreate, current_user: dict = Depends(get_current_user)):
-    existing = await promotions_collection.find_one({"id": promotion_id})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Promotion not found")
-    
-    update_dict = promotion_update.model_dump()
-    await promotions_collection.update_one({"id": promotion_id}, {"$set": update_dict})
-    
-    updated = await promotions_collection.find_one({"id": promotion_id}, {"_id": 0})
-    return Promotion(**updated)
+    # 🔒 VALIDACIÓN SOLO AL ACTIVAR
+    if is_active:
+        start_date = promotion.get("start_date")
+        end_date = promotion.get("end_date")
 
-@router.patch("/{promotion_id}/toggle")
-async def toggle_promotion(promotion_id: str, is_active: bool, current_user: dict = Depends(get_current_user)):
-    result = await promotions_collection.update_one({"id": promotion_id}, {"$set": {"is_active": is_active}})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Promotion not found")
-    return {"message": "Promotion status updated"}
+        if not start_date or not end_date:
+            raise HTTPException(
+                status_code=400,
+                detail="Promotion must have start_date and end_date before activation"
+            )
 
-@router.delete("/{promotion_id}")
-async def delete_promotion(promotion_id: str, current_user: dict = Depends(get_current_user)):
-    result = await promotions_collection.delete_one({"id": promotion_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Promotion not found")
-    return {"message": "Promotion deleted successfully"}
+        now = datetime.now(timezone.utc)
+
+        if start_date > now:
+            raise HTTPException(
+                status_code=400,
+                detail="Promotion has not started yet"
+            )
+
+        if end_date < now:
+            raise HTTPException(
+                status_code=400,
+                detail="Promotion is expired"
+            )
+
+    await media_files_collection.update_one(
+        {"id": file_id},
+        {"$set": {"is_active": is_active}}
+    )
+
+    return {
+        "message": "Promotion status updated",
+        "is_active": is_active
+    }
