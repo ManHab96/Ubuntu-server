@@ -28,7 +28,11 @@ const Appointments = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [newDate, setNewDate] = useState('');
+
+
   const [formData, setFormData] = useState({
     customer_id: '',
     car_id: '',
@@ -124,6 +128,51 @@ const Appointments = () => {
       fetchAppointments();
     } catch (error) {
       toast.error('Error al actualizar estado');
+    }
+  };
+
+  const handleRescheduleAppointment = async () => {
+      if (!selectedAppointment || !newDate) return;
+
+      try {
+        await axios.patch(
+          `${API_URL}/api/appointments/${selectedAppointment.id}`,
+          {
+            appointment_date: new Date(newDate).toISOString()
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+       toast.success('Cita reprogramada correctamente');
+
+        setRescheduleOpen(false);
+        setSelectedAppointment(null);
+        setNewDate('');
+        fetchAppointments();
+      } catch (error) {
+        console.error(error);
+        toast.error('Error al reprogramar la cita');
+      }
+    };
+  
+  const handleDeleteAppointment = async (appointmentId) => {
+    if (!window.confirm('¿Eliminar esta cita definitivamente?')) return;
+    
+    try {
+      await axios.delete(
+        `${API_URL}/api/appointments/${appointmentId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+    
+      toast.success('Cita eliminada');
+      fetchAppointments();
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al eliminar la cita');
     }
   };
 
@@ -242,6 +291,8 @@ const Appointments = () => {
               <DialogHeader>
                 <DialogTitle>Agendar Nueva Cita</DialogTitle>
               </DialogHeader>
+           
+            
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -433,14 +484,39 @@ const Appointments = () => {
                                   </Button>
                                 </>
                               )}
+                                                           
                               {apt.status === 'confirmed' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleStatusChange(apt.id, 'completed')}
-                                >
-                                  Completar
-                                </Button>
+                                <>
+                                 <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleStatusChange(apt.id, 'completed')}
+                                 >
+                                   Completar
+                              {/*Boton reprogramas citas*/}
+                                 </Button>
+                                 <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setSelectedAppointment(apt);
+                                        setNewDate(apt.appointment_date.slice(0, 16));
+                                        setRescheduleOpen(true);
+                                    }}
+                                 >
+                                   Reprogramar
+                                 </Button>
+                                </>
+                              )}
+                              {/*Boton Eliminar*/}
+                              {(apt.status === 'completed' || apt.status === 'cancelled') && (
+                                 <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleDeleteAppointment(apt.id)}
+                                 >
+                                    Eliminar
+                                 </Button>
                               )}
                             </div>
                           </div>
@@ -454,6 +530,40 @@ const Appointments = () => {
           </TabsContent>
         </Tabs>
       </div>
+{/*funciones reprogramar cita*/}
+     <Dialog open={rescheduleOpen} onOpenChange={setRescheduleOpen}>
+        <DialogContent>
+         <DialogHeader>
+            <DialogTitle>Reprogramar Cita</DialogTitle>
+         </DialogHeader>
+         
+         <div className="space-y-4">
+           <div>
+              <Label>Nueva fecha y hora</Label>
+              <Input
+                 type="datetime-local"
+                 value={newDate}
+                 onChange={(e) => setNewDate(e.target.value)}
+              />
+           </div>
+           
+           <div className="flex justify-end gap-2">
+             <Button
+               variant="outline"
+               onClick={() => setRescheduleOpen(false)}
+             >
+               Cancelar
+             </Button>
+             <Button
+               onClick={handleRescheduleAppointment}
+             >
+               Guardar cambios
+             </Button>
+           </div>
+         </div>
+        </DialogContent>
+     </Dialog>
+
     </DashboardLayout>
   );
 };

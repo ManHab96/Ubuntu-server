@@ -32,12 +32,12 @@ async def get_conversation_messages(conversation_id: str, current_user: dict = D
     return [Message(**msg) for msg in messages]
 
 # Additional endpoint to get messages directly
-@router.get("/")
-async def get_messages_by_conversation(conversation_id: str = None, current_user: dict = Depends(get_current_user)):
-    if not conversation_id:
-        return []
-    messages = await messages_collection.find({"conversation_id": conversation_id}, {"_id": 0}).sort("timestamp", 1).to_list(1000)
-    return [Message(**msg) for msg in messages]
+#@router.get("/")
+#async def get_messages_by_conversation(conversation_id: str = None, current_user: dict = Depends(get_current_user)):
+    #if not conversation_id:
+        #return []
+    #messages = await messages_collection.find({"conversation_id": conversation_id}, {"_id": 0}).sort("timestamp", 1).to_list(1000)
+    #return [Message(**msg) for msg in messages]#
 
 # Separate messages router
 messages_router = APIRouter(prefix="/api/messages", tags=["messages"])
@@ -46,5 +46,35 @@ messages_router = APIRouter(prefix="/api/messages", tags=["messages"])
 async def get_messages(conversation_id: str = None, current_user: dict = Depends(get_current_user)):
     if not conversation_id:
         return []
-    messages = await messages_collection.find({"conversation_id": conversation_id}, {"_id": 0}).sort("timestamp", 1).to_list(1000)
+    messages = await messages_collection.find(
+        {"conversation_id": conversation_id},
+        {"_id": 0}
+    ).sort("timestamp", 1).to_list(1000)
     return messages
+
+@router.delete("/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    conversation = await conversations_collection.find_one(
+        {"id": conversation_id}
+    )
+
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # 🔥 eliminar todos los mensajes
+    await messages_collection.delete_many({
+        "conversation_id": conversation_id
+    })
+
+    # 🔥 eliminar la conversación
+    await conversations_collection.delete_one({
+        "id": conversation_id
+    })
+
+    return {
+        "status": "ok",
+        "message": "Conversation and messages deleted"
+    }

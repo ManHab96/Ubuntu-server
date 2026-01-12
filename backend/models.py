@@ -185,6 +185,9 @@ class AppointmentCreate(BaseModel):
     ai_prompt: Optional[str] = None
     ai_extracted_data: Optional[Dict[str, Any]] = None
 
+#MODIFICAR FECHA
+class AppointmentReschedule(BaseModel):
+    appointment_date: datetime
 
 # =========================
 # 💬 CONVERSATIONS
@@ -198,18 +201,22 @@ class Message(BaseModel):
     message_text: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-
 class Conversation(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     agency_id: str
     customer_id: str
-    whatsapp_phone: str
+
+    whatsapp_phone: Optional[str] = None
     last_message: Optional[str] = None
-    last_message_at: datetime = Field(default_factory=datetime.utcnow)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-#agregamos para guardar conversaciones
+
+    last_message_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+    # estado interno de la conversación (IA, flujo, etc)
     conversation_state: Optional[Dict[str, Any]] = None
+
 
 # =========================
 # ⚙️ SYSTEM CONFIG
